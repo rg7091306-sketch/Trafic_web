@@ -1,4 +1,4 @@
-const coloresEstadisticas = ["#011C3D", "#053161", "#074279", "#095392", "#0E76C0", "#34A9ED", "#9DE3F9"];
+const coloresEstadisticas = ["#2E8BC0", "#3FA7D6", "#55B7E8", "#247BA0", "#6BBDE3", "#4FA9D1", "#86CBE8"];
 
 function numeroEstadistica(valor) {
     const numero = Number(String(valor ?? "").replace(/[^0-9.-]/g, ""));
@@ -28,6 +28,24 @@ function fechaEstadistica(valor) {
 function textoCorto(valor, limite = 30) {
     const texto = String(valor || "Sin nombre");
     return texto.length > limite ? `${texto.slice(0, limite - 1)}...` : texto;
+}
+
+function normalizarPaisEstadistica(valor) {
+    const pais = String(valor || "Sin país")
+        .replace(/\s*\(\d+\)/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    const paisNormalizado = pais.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+    if (paisNormalizado === "guatemala") {
+        return "Guatemala";
+    }
+
+    if (paisNormalizado === "el salvador") {
+        return "El Salvador";
+    }
+
+    return pais || "Sin país";
 }
 
 function donutEstadistica(items, total, id) {
@@ -96,7 +114,7 @@ function renderizarEstadisticas(datos) {
 
     datos.forEach(item => {
         const titulo = String(item.TITULO_ANALYTICS || item.TIPO_DASHBOARD || "Sin título").trim();
-        const pais = String(item.PAISES || "Sin país").trim();
+        const pais = normalizarPaisEstadistica(item.PAISES);
         const sesiones = numeroEstadistica(item.SESIONES);
         const usuarios = numeroEstadistica(item.USUARIOS_ACTIVOS);
         const fecha = fechaEstadistica(item.ULTIMA_ACTIVIDAD || item.ULTIMO_ACCESO || item.PRIMER_ACCESO);
@@ -104,7 +122,7 @@ function renderizarEstadisticas(datos) {
         const fechaClave = fecha ? fecha.toISOString().slice(5, 10) : "";
 
         titulos[titulo] = (titulos[titulo] || 0) + sesiones;
-        paises[pais] = (paises[pais] || 0) + usuarios;
+        paises[pais] = Math.max(paises[pais] || 0, usuarios);
         usuariosTotales += numeroEstadistica(item.TOTAL_USUARIOS || item.USUARIOS_ACTIVOS);
         usuariosRecurrentes += recurrentesItem;
         vistasTotales += numeroEstadistica(item.VISTAS);
@@ -130,8 +148,11 @@ function renderizarEstadisticas(datos) {
         ? `<div class="estadistica-tabla">${titulosOrdenados.map(([nombre, valor]) => `<div class="estadistica-fila"><span title="${escaparEstadistica(nombre)}">${escaparEstadistica(textoCorto(nombre, 32))}</span><strong>${valor.toLocaleString("es-GT")}</strong><i><b style="width:${valor / tituloMaximo * 100}%"></b></i></div>`).join("")}</div>`
         : '<p class="estadistica-vacia">Sin datos disponibles</p>';
 
-    const paisesOrdenados = Object.entries(paises).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([nombre, valor]) => ({ nombre, valor }));
-    const totalPaises = paisesOrdenados.reduce((total, item) => total + item.valor, 0);
+    const paisesOrdenadosTodos = Object.entries(paises)
+        .sort((a, b) => b[1] - a[1])
+        .map(([nombre, valor]) => ({ nombre, valor }));
+    const totalPaises = paisesOrdenadosTodos.reduce((total, item) => total + item.valor, 0);
+    const paisesOrdenados = paisesOrdenadosTodos.slice(0, 6);
     donutEstadistica(paisesOrdenados, totalPaises, "estadisticaPaisesDonut");
     const paisMaximo = Math.max(...paisesOrdenados.map(item => item.valor), 1);
     document.getElementById("estadisticaPaises").innerHTML = paisesOrdenados.length
@@ -140,21 +161,21 @@ function renderizarEstadisticas(datos) {
 
     const actividadOrdenada = Object.entries(actividad).sort((a, b) => a[0].localeCompare(b[0])).slice(-12);
     const actividadMaxima = Math.max(...actividadOrdenada.map(([, valor]) => valor), 1);
-    document.getElementById("estadisticaActividad").innerHTML = actividadOrdenada.length
-        ? `<div class="estadistica-linea">${actividadOrdenada.map(([fecha, valor], indice) => `<div class="estadistica-punto" style="left:${actividadOrdenada.length === 1 ? 50 : indice / (actividadOrdenada.length - 1) * 100}%; bottom:${Math.max(valor / actividadMaxima * 86, 8)}%"><b>${valor.toLocaleString("es-GT")}</b><span>${fecha.slice(5)}</span></div>`).join("")}<div class="estadistica-linea-trazo"></div></div>`
-        : '<p class="estadistica-vacia">Sin fechas disponibles</p>';
+    renderizarLineaEstadistica(
+        "estadisticaActividad",
+        actividadOrdenada.map(([fecha, valor]) => ({
+            etiqueta: fecha.slice(5),
+            valor
+        })),
+        actividadMaxima,
+        "sesiones"
+    );
 
     const interaccionOrdenada = Object.entries(interaccion).filter(([, valor]) => valor > 0).sort((a, b) => b[1] - a[1]).slice(0, 6);
     const interaccionMaxima = Math.max(...interaccionOrdenada.map(([, valor]) => valor), 1);
     document.getElementById("estadisticaInteraccion").innerHTML = interaccionOrdenada.length
         ? `<div class="estadistica-barras">${interaccionOrdenada.map(([nombre, valor]) => `<div class="estadistica-barra-fila"><span>${escaparEstadistica(textoCorto(nombre, 28))}</span><i><b style="width:${valor / interaccionMaxima * 100}%"></b></i><strong>${valor.toLocaleString("es-GT")} s</strong></div>`).join("")}</div>`
         : '<p class="estadistica-vacia">Sin tiempos disponibles</p>';
-
-    const recurrentesTotal = Math.min(usuariosRecurrentes, usuariosTotales);
-    donutEstadistica([
-        { nombre: "Recurrentes", valor: recurrentesTotal },
-        { nombre: "Nuevos", valor: Math.max(usuariosTotales - recurrentesTotal, 0) }
-    ], usuariosTotales, "estadisticaFidelizacion");
 
     const fechasInteraccion = Object.entries(interaccionPorFecha).sort((a, b) => a[0].localeCompare(b[0])).slice(-12).map(([etiqueta, valor]) => ({ etiqueta, valor }));
     renderizarLineaEstadistica("estadisticaTiempoFecha", fechasInteraccion, Math.max(...fechasInteraccion.map(item => item.valor), 1), "segundos");
@@ -163,7 +184,7 @@ function renderizarEstadisticas(datos) {
     const nuevos = fechasNuevos.map(etiqueta => ({ etiqueta, valor: nuevosPorFecha[etiqueta] || 0 }));
     const recurrentes = fechasNuevos.map(etiqueta => ({ etiqueta, valor: recurrentesPorFecha[etiqueta] || 0 }));
     const maxNuevos = Math.max(...nuevos.map(item => item.valor), ...recurrentes.map(item => item.valor), 1);
-    renderizarLineaEstadistica("estadisticaNuevosRecurrentes", nuevos, maxNuevos, "usuarios", recurrentes);
+    renderizarLineaEstadistica("estadisticaFidelizacion", nuevos, maxNuevos, "usuarios", recurrentes);
 
     document.getElementById("estadisticaTotales").innerHTML = [
         ["Total de usuarios", usuariosTotales],
