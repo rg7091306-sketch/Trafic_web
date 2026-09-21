@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="dashboard-shell">
+        <div id="sidebar-container"></div>
+
+        <div class="dashboard-content">
+            <header class="header">
+                <div class="header-texto">
+                    <h1>Estadísticas</h1>
+                    <p>Resumen visual de sesiones y actividad</p>
+                </div>
+
+                <div class="estado">
+                    <span class="estado-punto"></span>
+                    Conectado a Google Analytics
+                </div>
+            </header>
+
+            <main class="contenedor">
+                <section class="estadisticas-grid">
+                    <article class="estadistica-card estadistica-card-lista">
+                        <h2>Sesiones por título de página</h2>
+                        <div id="estadisticaTitulos"></div>
+                    </article>
+
+                    <article class="estadistica-card">
+                        <h2>Usuarios activos por país</h2>
+                        <div id="estadisticaPaisesDonut"></div>
+                    </article>
+
+                    <article class="estadistica-card">
+                        <h2>Usuarios activos por país</h2>
+                        <div id="estadisticaPaises"></div>
+                    </article>
+
+                    <article class="estadistica-card estadistica-card-wide">
+                        <h2>Actividad de los usuarios a lo largo del tiempo</h2>
+                        <div id="estadisticaActividad"></div>
+                    </article>
+
+                    <article class="estadistica-card estadistica-card-wide">
+                        <h2>Tiempo de interacción medio por título</h2>
+                        <div id="estadisticaInteraccion"></div>
+                    </article>
+
+                    <article class="estadistica-card">
+                        <h2>Fidelización de usuarios</h2>
+                        <div id="estadisticaFidelizacion"></div>
+                    </article>
+
+                    <article class="estadistica-card estadistica-card-wide">
+                        <h2>Tiempo de interacción medio por usuario activo</h2>
+                        <div id="estadisticaTiempoFecha"></div>
+                    </article>
+
+                    <article class="estadistica-card">
+                        <h2>Usuarios nuevos y recurrentes</h2>
+                        <div id="estadisticaNuevosRecurrentes"></div>
+                    </article>
+
+                    <article class="estadistica-card estadistica-card-wide">
+                        <div id="estadisticaTotales" class="estadistica-metricas"></div>
+                    </article>
+
+                    <article class="estadistica-card estadistica-card-wide">
+                        <h2>Usuarios activos por título de página</h2>
+                        <div id="estadisticaUsuariosTitulo"></div>
+                    </article>
+
+                    <article class="estadistica-card">
+                        <h2>Usuarios activos por sistema operativo</h2>
+                        <div id="estadisticaSistemas"></div>
+                    </article>
+                </section>
+
+                <div id="errorAnalytics"></div>
+            </main>
+        </div>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/control.js"></script>
+    <script src="../js/estadisticas.js"></script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="dashboard-shell">
+        <div id="sidebar-container"></div>
+
+        <div class="dashboard-content">
+            <header class="header reportes-header-page">
+                <div class="header-texto">
+                    <h1>Reportes</h1>
+                    <p>Consulta y seguimiento de reportes de tráfico</p>
+                </div>
+
+                <div class="estado">
+                    <span class="estado-punto"></span>
+                    Conectado a Google Analytics
+                </div>
+            </header>
+
+            <main class="contenedor">
+                <section class="reportes-panel">
+                    <div class="reportes-header">
+                       
+
+                        <label class="reportes-selector" for="reportesEmpresa">
+                            Empresa
+                            <select id="reportesEmpresa">
+                                <option value="">Todas las empresas</option>
+                            </select>
+                        </label>
+
+                        <label class="reportes-selector reportes-selector-area" for="reportesArea">
+                            Área
+                            <select id="reportesArea">
+                                <option value="">Todas las áreas</option>
+                            </select>
+                        </label>
+
+                        <div class="reportes-periodo" aria-label="Filtro de periodo">
+                            <span>Periodo</span>
+                            <div class="reportes-periodo-controles">
+                                <label for="reportesDesde">Desde</label>
+                                <input type="date" id="reportesDesde">
+                                <label for="reportesHasta">Hasta</label>
+                                <input type="date" id="reportesHasta">
+                            </div>
+                        </div>
+
+                        <div class="reportes-buscador">
+                            <select id="reportesColumna" class="filtro" aria-label="Columna de reportes">
+                                <option value="">Todas las columnas</option>
+                                <option value="ID">ID</option>
+                                <option value="EMPRESA">Empresa</option>
+                                <option value="CLAVE_ANALYTICS">Clave Analytics</option>
+                                <option value="TITULO_ANALYTICS">Título Analytics</option>
+                                <option value="TIPO_DASHBOARD">Tipo Dashboard</option>
+                                <option value="ACTIVO">Activo</option>
+                                <option value="USUARIOS_ACTIVOS">Usuarios Activos</option>
+                                <option value="SESIONES">Sesiones</option>
+                                <option value="VISTAS">Vistas</option>
+                                <option value="TIEMPO_INTERACCION_MEDIO_POR_SESION">Tiempo Interacción Medio</option>
+                                <option value="SESIONES_CON_INTERACCION">Sesiones con Interacción</option>
+                                <option value="PORCENTAJE_INTERACCIONES">% Interacciones</option>
+                                <option value="USUARIOS_RECURRENTES">Usuarios Recurrentes</option>
+                                <option value="TOTAL_USUARIOS">Total Usuarios</option>
+                                <option value="TOTAL_EVENTOS">Total Eventos</option>
+                                <option value="PRIMER_ACCESO">Primer Acceso</option>
+                                <option value="ULTIMO_ACCESO">Último Acceso</option>
+                                <option value="ULTIMA_ACTIVIDAD">Última Actividad</option>
+                                <option value="NAVEGADORES">Navegadores</option>
+                                <option value="SISTEMAS_OPERATIVOS">Sistemas Operativos</option>
+                                <option value="CATEGORIAS_DISPOSITIVO">Dispositivos</option>
+                                <option value="PLATAFORMAS">Plataformas</option>
+                                <option value="CIUDADES">Ciudades</option>
+                                <option value="PAISES">Países</option>
+                                <option value="REGIONES">Regiones</option>
+                                <option value="FUENTES_SESION">Fuentes Sesión</option>
+                                <option value="URL_PAGINAS">URL Páginas</option>
+                            </select>
+                        </div>
+                    </div>
+
+                </section>
+
+                <div id="graficaSesiones" class="line-chart reportes-grafica" aria-label="Gráfica de sesiones por actividad"></div>
+
+                <section class="card-tabla reportes-tabla">
+                    <div class="card-tabla-header">
+                        <div>
+                            <h2>Detalle de información</h2>
+                            <div class="contador">Datos de la empresa seleccionada</div>
+                        </div>
+                        <div class="contador" id="contadorReportes">-</div>
+                    </div>
+
+                    <div class="tabla-wrapper">
+                        <table id="tablaReportes">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Empresa</th>
+                                    <th>Clave Analytics</th>
+                                    <th>Título Analytics</th>
+                                    <th>Tipo Dashboard</th>
+                                    <th>Activo</th>
+                                    <th>Usuarios Activos</th>
+                                    <th>Sesiones</th>
+                                    <th>Vistas</th>
+                                    <th>Tiempo Interacción Medio</th>
+                                    <th>Sesiones con Interacción</th>
+                                    <th>% Interacciones</th>
+                                    <th>Usuarios Recurrentes</th>
+                                    <th>Total Usuarios</th>
+                                    <th>Total Eventos</th>
+                                    <th>Primer Acceso</th>
+                                    <th>Último Acceso</th>
+                                    <th>Última Actividad</th>
+                                    <th>Navegadores</th>
+                                    <th>Sistemas Operativos</th>
+                                    <th>Dispositivos</th>
+                                    <th>Plataformas</th>
+                                    <th>Ciudades</th>
+                                    <th>Países</th>
+                                    <th>Regiones</th>
+                                    <th>Fuentes Sesión</th>
+                                    <th>URL</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaReportesBody"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+
+        </div>
+    </div>
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/reportes.js"></script>
+    <script src="../js/control.js"></script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Control General de Tráfico</title>
+    <link rel="stylesheet" href="../css/style.css">
+
+</head>
+
+
+<body>
+
+
+    <div class="dashboard-shell">
+        <div id="sidebar-container"></div>
+
+            <div class="dashboard-content">
+
+                <header class="header">
+
+                    <div class="header-texto">
+
+                        <h1>
+                            Control General de Tráfico
+                        </h1>
+
+                        <p>
+                            Monitoreo de actividad de dashboards y usuarios
+                        </p>
+
+                    </div>
+
+                    <div class="estado">
+                        <span class="estado-punto"></span>
+                        Conectado a Google Analytics
+                    </div>
+
+                </header>
+
+                <main class="contenedor">
+
+                <section id="view-general" class="view-panel">
+                     <section class="uso-dashboard-card">
+                        <div class="chart-header">
+                            <h3>Uso de dashboards</h3>
+                            <p>Comparación entre dashboards utilizados y no utilizados.</p>
+                        </div>
+                        <div id="chartUsoDashboards" class="uso-dashboard-chart"></div>
+                    </section>
+
+                    <div class="chart-card chart-card-wide">
+                        <div class="chart-header">
+                            <h3>Resumen general</h3>
+                        </div>
+                        <div id="chartGeneral" class="chart-bars"></div>
+                    </div>
+
+                    <section class="general-graficas" aria-label="Gráficas generales">
+                        <article class="general-grafica-card">
+                            <div class="chart-header">
+                                <h3>Distribución general por país</h3>
+                            </div>
+                            <div id="chartPaises" class="general-lista-grafica"></div>
+                        </article>
+
+                        <article class="general-grafica-card">
+                            <div class="chart-header">
+                                <h3>Distribución general por dispositivo</h3>
+                            </div>
+                            <div id="chartDispositivos" class="general-lista-grafica"></div>
+                        </article>
+
+                        <article class="general-grafica-card">
+                            <div class="chart-header">
+                                <h3>Distribución general por navegador</h3>
+                            </div>
+                            <div id="chartNavegadores" class="general-lista-grafica"></div>
+                        </article>
+
+                        <article class="general-grafica-card">
+                            <div class="chart-header">
+                                <h3>Resumen general de actividad</h3>
+                            </div>
+                            <div id="chartInteraccion" class="general-metricas-grafica"></div>
+                        </article>
+                    </section>
+
+                   
+
+                    <section class="kpis">
+
+                        <div class="kpi">
+                            <div class="kpi-etiqueta">Dashboards</div>
+                            <div class="kpi-valor" id="kpiDashboards">-</div>
+                        </div>
+
+                        <div class="kpi">
+                            <div class="kpi-etiqueta">Usuarios activos</div>
+                            <div class="kpi-valor" id="kpiUsuarios">-</div>
+                        </div>
+
+                        <div class="kpi">
+                            <div class="kpi-etiqueta">Sesiones</div>
+                            <div class="kpi-valor" id="kpiSesiones">-</div>
+                        </div>
+
+                        <div class="kpi">
+                            <div class="kpi-etiqueta">Vistas</div>
+                            <div class="kpi-valor" id="kpiVistas">-</div>
+                        </div>
+
+                    </section>
+
+                   
+
+                    <div id="errorAnalytics"></div>
+
+        
+
+                </section>
+
+                
+
+                </main>
+
+            </div>
+
+        </div>
+
+
+    <script src="../js/sidebar.js"></script>
+    <script src="../js/control.js"></script>
+
+
+</body>
+
+</html>
