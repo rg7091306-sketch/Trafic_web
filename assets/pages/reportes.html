@@ -28,62 +28,87 @@
                     <div class="reportes-header">
                        
 
-                        <label class="reportes-selector" for="reportesEmpresa">
-                            Empresa
-                            <select id="reportesEmpresa">
-                                <option value="">Todas las empresas</option>
-                            </select>
-                        </label>
+                        <div class="reportes-selector reportes-selector-multiple">
+                            <span>Empresa</span>
+                            <button type="button" id="reportesEmpresaTrigger" class="reportes-multiple-trigger" aria-expanded="false" aria-controls="reportesEmpresaOpciones">
+                                <span id="reportesEmpresaResumen">Todas las empresas</span>
+                                <span class="reportes-multiple-chevron">⌄</span>
+                            </button>
+                            <div id="reportesEmpresaOpciones" class="reportes-multiple-menu" hidden></div>
+                        </div>
 
-                        <label class="reportes-selector reportes-selector-area" for="reportesArea">
-                            Área
-                            <select id="reportesArea">
-                                <option value="">Todas las áreas</option>
-                            </select>
-                        </label>
+                        <div class="reportes-selector reportes-selector-area reportes-selector-custom">
+                            <span>Área</span>
+                            <button type="button" id="reportesAreaTrigger" class="reportes-multiple-trigger" aria-expanded="false" aria-controls="reportesAreaOpciones">
+                                <span id="reportesAreaResumen">Todas las áreas</span>
+                                <span class="reportes-multiple-chevron">⌄</span>
+                            </button>
+                            <div id="reportesAreaOpciones" class="reportes-multiple-menu" hidden></div>
+                        </div>
 
                         <div class="reportes-periodo" aria-label="Filtro de periodo">
                             <span>Periodo</span>
                             <div class="reportes-periodo-controles">
                                 <label for="reportesDesde">Desde</label>
-                                <input type="date" id="reportesDesde">
+                                <div class="reportes-fecha">
+                                    <button type="button" id="reportesDesdeTrigger" class="reportes-fecha-trigger" aria-expanded="false" aria-controls="reportesDesdeCalendario">
+                                        <span id="reportesDesdeTexto">Seleccionar</span><span class="reportes-fecha-icono">▦</span>
+                                    </button>
+                                    <input type="hidden" id="reportesDesde">
+                                    <div id="reportesDesdeCalendario" class="reportes-calendario" hidden></div>
+                                </div>
                                 <label for="reportesHasta">Hasta</label>
-                                <input type="date" id="reportesHasta">
+                                <div class="reportes-fecha">
+                                    <button type="button" id="reportesHastaTrigger" class="reportes-fecha-trigger" aria-expanded="false" aria-controls="reportesHastaCalendario">
+                                        <span id="reportesHastaTexto">Seleccionar</span><span class="reportes-fecha-icono">▦</span>
+                                    </button>
+                                    <input type="hidden" id="reportesHasta">
+                                    <div id="reportesHastaCalendario" class="reportes-calendario" hidden></div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="reportes-buscador">
-                            <select id="reportesColumna" class="filtro" aria-label="Columna de reportes">
-                                <option value="">Todas las columnas</option>
-                                <option value="ID">ID</option>
-                                <option value="EMPRESA">Empresa</option>
-                                <option value="CLAVE_ANALYTICS">Clave Analytics</option>
-                                <option value="TITULO_ANALYTICS">Título Analytics</option>
-                                <option value="TIPO_DASHBOARD">Tipo Dashboard</option>
-                                <option value="ACTIVO">Activo</option>
-                                <option value="USUARIOS_ACTIVOS">Usuarios Activos</option>
-                                <option value="SESIONES">Sesiones</option>
-                                <option value="VISTAS">Vistas</option>
-                                <option value="TIEMPO_INTERACCION_MEDIO_POR_SESION">Tiempo Interacción Medio</option>
-                                <option value="SESIONES_CON_INTERACCION">Sesiones con Interacción</option>
-                                <option value="PORCENTAJE_INTERACCIONES">% Interacciones</option>
-                                <option value="USUARIOS_RECURRENTES">Usuarios Recurrentes</option>
-                                <option value="TOTAL_USUARIOS">Total Usuarios</option>
-                                <option value="TOTAL_EVENTOS">Total Eventos</option>
-                                <option value="PRIMER_ACCESO">Primer Acceso</option>
-                                <option value="ULTIMO_ACCESO">Último Acceso</option>
-                                <option value="ULTIMA_ACTIVIDAD">Última Actividad</option>
-                                <option value="NAVEGADORES">Navegadores</option>
-                                <option value="SISTEMAS_OPERATIVOS">Sistemas Operativos</option>
-                                <option value="CATEGORIAS_DISPOSITIVO">Dispositivos</option>
-                                <option value="PLATAFORMAS">Plataformas</option>
-                                <option value="CIUDADES">Ciudades</option>
-                                <option value="PAISES">Países</option>
-                                <option value="REGIONES">Regiones</option>
-                                <option value="FUENTES_SESION">Fuentes Sesión</option>
-                                <option value="URL_PAGINAS">URL Páginas</option>
-                            </select>
+                        <div class="reportes-buscador reportes-selector-custom">
+                            <button type="button" id="reportesColumnaTrigger" class="reportes-multiple-trigger" aria-expanded="false" aria-controls="reportesColumnaOpciones">
+                                <span id="reportesColumnaResumen">Todas las columnas</span>
+                                <span class="reportes-multiple-chevron">⌄</span>
+                            </button>
+                            <div id="reportesColumnaOpciones" class="reportes-multiple-menu" hidden>
+                                <button type="button" class="reportes-opcion-simple" data-value="">Todas las columnas</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="ID">ID</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="EMPRESA">Empresa</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="CLAVE_ANALYTICS">Clave Analytics</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="TITULO_ANALYTICS">Título Analytics</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="TIPO_DASHBOARD">Tipo Dashboard</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="ACTIVO">Activo</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="USUARIOS_ACTIVOS">Usuarios Activos</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="SESIONES">Sesiones</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="VISTAS">Vistas</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="TIEMPO_INTERACCION_MEDIO_POR_SESION">Tiempo Interacción Medio</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="SESIONES_CON_INTERACCION">Sesiones con Interacción</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="PORCENTAJE_INTERACCIONES">% Interacciones</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="USUARIOS_RECURRENTES">Usuarios Recurrentes</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="TOTAL_USUARIOS">Total Usuarios</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="TOTAL_EVENTOS">Total Eventos</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="PRIMER_ACCESO">Primer Acceso</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="ULTIMO_ACCESO">Último Acceso</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="ULTIMA_ACTIVIDAD">Última Actividad</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="NAVEGADORES">Navegadores</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="SISTEMAS_OPERATIVOS">Sistemas Operativos</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="CATEGORIAS_DISPOSITIVO">Dispositivos</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="PLATAFORMAS">Plataformas</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="CIUDADES">Ciudades</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="PAISES">Países</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="REGIONES">Regiones</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="FUENTES_SESION">Fuentes Sesión</button>
+                                <button type="button" class="reportes-opcion-simple" data-value="URL_PAGINAS">URL Páginas</button>
+                            </div>
                         </div>
+
+                        <button type="button" id="reportesLimpiarFiltros" class="reportes-limpiar-filtros" title="Limpiar filtros">
+                            <span aria-hidden="true">↺</span>
+                            Limpiar filtros
+                        </button>
                     </div>
 
                 </section>

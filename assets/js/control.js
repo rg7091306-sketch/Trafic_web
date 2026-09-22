@@ -524,7 +524,11 @@ function formatearValorCelda(valor, tipo, clave) {
         return formatearPorcentaje(valor);
     }
 
-    const texto = escaparHTML(valor);
+    const texto = escaparHTML(
+        ["PRIMER_ACCESO", "ULTIMO_ACCESO", "ULTIMA_ACTIVIDAD"].includes(clave)
+            ? formatearFechaAnalytics(valor)
+            : valor
+    );
 
     // Badges simples para campos que se benefician visualmente.
     if (clave === "ACTIVO") {
@@ -537,6 +541,26 @@ function formatearValorCelda(valor, tipo, clave) {
     }
 
     return texto;
+}
+
+function formatearFechaAnalytics(valor) {
+    const texto = String(valor);
+    const fecha = new Date(texto);
+
+    if (!Number.isNaN(fecha.getTime()) && /^(1899|1900)-/.test(texto)) {
+        const inicio = Date.UTC(1899, 11, 30);
+        const transcurrido = Math.max(fecha.getTime() - inicio, 0);
+        const segundos = Math.floor(transcurrido / 1000);
+        const horas = Math.floor(segundos / 3600);
+        const minutos = Math.floor((segundos % 3600) / 60);
+        const segundosRestantes = segundos % 60;
+
+        return [horas, minutos, segundosRestantes]
+            .map(valor => String(valor).padStart(2, "0"))
+            .join(":");
+    }
+
+    return valor;
 }
 
 
@@ -595,6 +619,8 @@ function obtenerClaseCelda(clave, tipo) {
 
 function formatearNumero(valor) {
 
+    valor = convertirSerialAnalytics(valor);
+
     const numero = Number(valor);
 
     if (
@@ -609,8 +635,27 @@ function formatearNumero(valor) {
     return numero.toLocaleString("es-GT");
 }
 
+function convertirSerialAnalytics(valor) {
+    const texto = String(valor ?? "");
+
+    if (!/^(1899|1900)-/.test(texto)) {
+        return valor;
+    }
+
+    const fecha = new Date(texto);
+
+    if (Number.isNaN(fecha.getTime())) {
+        return valor;
+    }
+
+    const inicio = Date.UTC(1899, 11, 30);
+    return Math.round((fecha.getTime() - inicio) / 86400000);
+}
+
 
 function numeroSeguro(valor) {
+
+    valor = convertirSerialAnalytics(valor);
 
     const numero = Number(valor);
 
@@ -902,6 +947,142 @@ function renderizarListaGrafica(id, items) {
         : '<div class="empty-chart">Sin datos</div>';
 }
 
+function fechaActividadGeneral(valor) {
+    if (!valor) {
+        return null;
+    }
+
+    const texto = String(valor).trim();
+    const partes = texto.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);
+
+    if (partes) {
+        const [, dia, mes, anio] = partes;
+        return new Date(Number(anio), Number(mes) - 1, Number(dia));
+    }
+
+    const fecha = new Date(texto);
+    return Number.isNaN(fecha.getTime()) ? null : fecha;
+}
+
+function claveFechaGeneral(fecha) {
+    return [
+        fecha.getFullYear(),
+        String(fecha.getMonth() + 1).padStart(2, "0"),
+        String(fecha.getDate()).padStart(2, "0")
+    ].join("-");
+}
+
+function renderizarGraficaActividadGeneral(datos) {
+    const contenedor = document.getElementById("chartInteraccion");
+
+    if (!contenedor) {
+        return;
+    }
+
+    const sesionesPorFecha = {};
+
+    datos.forEach(item => {
+        const fecha = fechaActividadGeneral(
+            item.ULTIMA_ACTIVIDAD || item.ULTIMO_ACCESO || item.PRIMER_ACCESO
+        );
+
+        if (!fecha) {
+            return;
+        }
+
+        const clave = claveFechaGeneral(fecha);
+        sesionesPorFecha[clave] = {
+            fecha,
+            sesiones: (sesionesPorFecha[clave]?.sesiones || 0) + numeroSeguro(item.SESIONES)
+        };
+    });
+
+    const fechasConDatos = Object.values(sesionesPorFecha).sort((a, b) => a.fecha - b.fecha);
+
+    if (!fechasConDatos.length) {
+        contenedor.innerHTML = '<div class="empty-chart">Sin actividad para mostrar</div>';
+        return;
+    }
+
+    const puntos = [];
+    const primeraFecha = new Date(fechasConDatos[0].fecha);
+    const ultimaFecha = new Date();
+    ultimaFecha.setHours(0, 0, 0, 0);
+
+    for (const fecha = new Date(primeraFecha); fecha <= ultimaFecha; fecha.setDate(fecha.getDate() + 1)) {
+        const clave = claveFechaGeneral(fecha);
+        puntos.push({
+            fecha: new Date(fecha),
+            sesiones: sesionesPorFecha[clave]?.sesiones || 0
+        });
+    }
+
+    const ancho = 900;
+    const alto = 330;
+    const margen = { superior: 24, derecho: 24, inferior: 70, izquierdo: 48 };
+    const anchoUtil = ancho - margen.izquierdo - margen.derecho;
+    const altoUtil = alto - margen.superior - margen.inferior;
+    const maximo = Math.max(...puntos.map(punto => punto.sesiones), 1);
+    const coordenadas = puntos.map((punto, indice) => ({
+        ...punto,
+        x: puntos.length === 1
+            ? margen.izquierdo + anchoUtil / 2
+            : margen.izquierdo + indice / (puntos.length - 1) * anchoUtil,
+        y: margen.superior + altoUtil - punto.sesiones / maximo * altoUtil
+    }));
+    const linea = coordenadas.map(punto => `${punto.x},${punto.y}`).join(" ");
+    const area = `${margen.izquierdo},${margen.superior + altoUtil} ${linea} ${margen.izquierdo + anchoUtil},${margen.superior + altoUtil}`;
+    const pasoEtiqueta = puntos.length <= 24 ? 1 : Math.ceil(puntos.length / 18);
+    const zonasInteraccion = coordenadas.map((punto, indice) => {
+        const puntoAnterior = coordenadas[indice - 1]?.x || margen.izquierdo;
+        const puntoSiguiente = coordenadas[indice + 1]?.x || margen.izquierdo + anchoUtil;
+        const inicioZona = indice === 0 ? margen.izquierdo : (puntoAnterior + punto.x) / 2;
+        const finZona = indice === coordenadas.length - 1 ? margen.izquierdo + anchoUtil : (punto.x + puntoSiguiente) / 2;
+        return `<rect x="${inicioZona}" y="${margen.superior}" width="${Math.max(finZona - inicioZona, 1)}" height="${altoUtil}" class="general-linea-zona" data-indice="${indice}" />`;
+    }).join("");
+    const etiquetas = coordenadas.map((punto, indice) => {
+        const mostrar = indice === 0 || indice === puntos.length - 1 || indice % pasoEtiqueta === 0;
+        return mostrar
+            ? `<text x="${punto.x}" y="${alto - 24}" class="general-linea-fecha" text-anchor="end" transform="rotate(-35 ${punto.x} ${alto - 24})">${punto.fecha.toLocaleDateString("es-GT", { day: "2-digit", month: "short" })}</text>`
+            : "";
+    }).join("");
+
+    contenedor.innerHTML = `<svg class="general-linea-svg" viewBox="0 0 ${ancho} ${alto}" role="img" aria-label="Sesiones por fecha">
+        <line x1="${margen.izquierdo}" y1="${margen.superior}" x2="${margen.izquierdo}" y2="${margen.superior + altoUtil}" class="general-linea-eje" />
+        <line x1="${margen.izquierdo}" y1="${margen.superior + altoUtil}" x2="${margen.izquierdo + anchoUtil}" y2="${margen.superior + altoUtil}" class="general-linea-eje" />
+        <polygon points="${area}" class="general-linea-area" />
+        <polyline points="${linea}" class="general-linea-trazo" />
+        ${coordenadas.map((punto, indice) => {
+            const etiquetaX = Math.min(Math.max(punto.x - 70, margen.izquierdo), ancho - margen.derecho - 140);
+            const etiquetaY = Math.max(punto.y - 52, 6);
+            const fechaTexto = punto.fecha.toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric" });
+            return `<line x1="${punto.x}" y1="${margen.superior}" x2="${punto.x}" y2="${margen.superior + altoUtil}" class="general-linea-guia" data-indice="${indice}" /><circle cx="${punto.x}" cy="${punto.y}" r="5" class="general-linea-punto" data-indice="${indice}"><title>${fechaTexto} - ${formatearNumero(punto.sesiones)} sesiones</title></circle><g class="general-linea-informacion" data-indice="${indice}" transform="translate(${etiquetaX} ${etiquetaY})"><rect width="140" height="38" rx="6" /><text x="70" y="15" text-anchor="middle">${fechaTexto}</text><text x="70" y="30" text-anchor="middle">${formatearNumero(punto.sesiones)} sesiones</text></g>`;
+        }).join("")}
+        ${zonasInteraccion}
+        ${etiquetas}
+    </svg>`;
+
+    const svg = contenedor.querySelector(".general-linea-svg");
+    const ocultarGuias = () => {
+        svg.querySelectorAll(".general-linea-guia, .general-linea-punto, .general-linea-informacion").forEach(elemento => {
+            elemento.classList.remove("activo");
+        });
+    };
+
+    svg.querySelectorAll(".general-linea-zona").forEach(zona => {
+        zona.addEventListener("mouseenter", () => {
+            ocultarGuias();
+            const indice = zona.dataset.indice;
+            svg.querySelectorAll(`.general-linea-guia[data-indice='${indice}'], .general-linea-punto[data-indice='${indice}']`).forEach(elemento => {
+                elemento.classList.add("activo");
+            });
+            const informacion = svg.querySelector(`.general-linea-informacion[data-indice='${indice}']`);
+            informacion?.classList.add("activo");
+        });
+    });
+    svg.addEventListener("mouseleave", ocultarGuias);
+}
+
 function renderizarGraficasGenerales(datos) {
     renderizarListaGrafica(
         "chartPaises",
@@ -916,27 +1097,7 @@ function renderizarGraficasGenerales(datos) {
         agruparGrafica(datos, "NAVEGADORES", "SESIONES")
     );
 
-    const contenedor = document.getElementById("chartInteraccion");
-
-    if (!contenedor) {
-        return;
-    }
-
-    const sesiones = sumarCampo(datos, "SESIONES");
-    const sesionesInteraccion = sumarCampo(datos, "SESIONES_CON_INTERACCION");
-    const eventos = sumarCampo(datos, "TOTAL_EVENTOS");
-    const porcentaje = sesiones ? sesionesInteraccion / sesiones * 100 : 0;
-
-    contenedor.innerHTML = `
-        <div class="general-metrica-principal">
-            <strong>${porcentaje.toLocaleString("es-GT", { maximumFractionDigits: 1 })}%</strong>
-            <span>sesiones con interacción</span>
-        </div>
-        <div class="general-metricas-secundarias">
-            <div><strong>${formatearNumero(sesionesInteraccion)}</strong><span>con interacción</span></div>
-            <div><strong>${formatearNumero(eventos)}</strong><span>eventos totales</span></div>
-        </div>
-    `;
+    renderizarGraficaActividadGeneral(datos);
 }
 
 function actualizarGraficasGeneralesSeguras(datos) {
