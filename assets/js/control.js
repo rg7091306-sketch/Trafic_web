@@ -3,7 +3,7 @@
 // =====================================================
 
 const URL_API =
-    "https://script.google.com/macros/s/AKfycby8ZuM85TRry5eNmBGq5IjlmNdO2B3WPeHQb-AE77lcUYD8DKkVTkNm1cejVhzCW3LtOQ/exec";
+    "https://script.google.com/macros/s/AKfycbwV2FR9r5S2WNSzEy6kY86lcWsxmPvlWUa2Jr6G0cuCkBoytsWDjJ6I2Iq_AS83CteD/exec";
 
 // Cada cuánto actualizar: 300000 ms = 5 minutos
 const TIEMPO_ACTUALIZACION = 300000;

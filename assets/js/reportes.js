@@ -107,22 +107,32 @@ function escaparTexto(texto) {
 
 function formatearFechaAnalytics(valor) {
     const texto = String(valor);
-    const fecha = new Date(texto);
+    const numero = Number(texto.replace(/,/g, ""));
+    const fechaLocal = texto.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+    const fecha = /^\d+(\.\d+)?$/.test(texto) && Number.isFinite(numero)
+        ? new Date(Date.UTC(1899, 11, 30) + numero * 86400000)
+        : fechaLocal
+            ? new Date(
+                Number(fechaLocal[3]),
+                Number(fechaLocal[2]) - 1,
+                Number(fechaLocal[1]),
+                Number(fechaLocal[4] || 0),
+                Number(fechaLocal[5] || 0),
+                Number(fechaLocal[6] || 0)
+            )
+            : new Date(texto);
 
-    if (!Number.isNaN(fecha.getTime()) && /^(1899|1900)-/.test(texto)) {
-        const inicio = Date.UTC(1899, 11, 30);
-        const transcurrido = Math.max(fecha.getTime() - inicio, 0);
-        const segundos = Math.floor(transcurrido / 1000);
-        const horas = Math.floor(segundos / 3600);
-        const minutos = Math.floor((segundos % 3600) / 60);
-        const segundosRestantes = segundos % 60;
-
-        return [horas, minutos, segundosRestantes]
-            .map(valor => String(valor).padStart(2, "0"))
-            .join(":");
+    if (Number.isNaN(fecha.getTime())) {
+        return valor;
     }
 
-    return valor;
+    const dia = String(fecha.getDate()).padStart(2, "0");
+    const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+    const anio = fecha.getFullYear();
+    const horas = String(fecha.getHours()).padStart(2, "0");
+    const minutos = String(fecha.getMinutes()).padStart(2, "0");
+
+    return `${dia}/${mes}/${anio} ${horas}:${minutos}`;
 }
 
 const mesesCalendario = [
@@ -134,18 +144,19 @@ function valorFechaLocal(fecha) {
     return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}-${String(fecha.getDate()).padStart(2, "0")}`;
 }
 
-function textoFechaCalendario(valor) {
+function textoFechaCalendario(valor, textoVacio = "Seleccionar") {
     if (!valor) {
-        return "Seleccionar";
+        return textoVacio;
     }
 
     const fecha = new Date(`${valor}T00:00:00`);
     return Number.isNaN(fecha.getTime())
-        ? "Seleccionar"
+        ? textoVacio
         : `${fecha.getDate()} ${mesesCalendario[fecha.getMonth()].slice(0, 3)} ${fecha.getFullYear()}`;
 }
 
 function inicializarCalendario(campoFecha, trigger, texto, calendario) {
+    const textoVacio = texto.dataset.placeholder || (campoFecha.id === "reportesDesde" ? "Desde" : "Hasta");
     let vista = campoFecha.value
         ? new Date(`${campoFecha.value}T00:00:00`)
         : new Date();
@@ -205,13 +216,13 @@ function inicializarCalendario(campoFecha, trigger, texto, calendario) {
         const dia = evento.target.closest("[data-fecha]");
         if (dia) {
             campoFecha.value = dia.dataset.fecha;
-            texto.textContent = textoFechaCalendario(campoFecha.value);
+            texto.textContent = textoFechaCalendario(campoFecha.value, textoVacio);
             cerrar();
             campoFecha.dispatchEvent(new Event("change", { bubbles: true }));
         }
     });
 
-    texto.textContent = textoFechaCalendario(campoFecha.value);
+    texto.textContent = textoFechaCalendario(campoFecha.value, textoVacio);
 }
 
 function filtrarDatosReportes(empresas, area, desde = "", hasta = "") {
@@ -266,6 +277,9 @@ function renderizarTablaReportes(empresa, area, textoBusqueda = "", columna = ""
     const inicio = (paginaActualReportes - 1) * registrosPorPaginaReportes;
     const datosPagina = datos.slice(inicio, inicio + registrosPorPaginaReportes);
     const filasPagina = datosPagina.map(item => `<tr>${columnasReportes.map(([clave]) => {
+        const claseEmpresa = clave === "EMPRESA" && columna && columna !== "EMPRESA"
+            ? " empresa-filtro-compacta"
+            : "";
         const valor = item[clave] === null || item[clave] === undefined
             ? "-"
             : columnasNumericasReportes.has(clave)
@@ -273,7 +287,7 @@ function renderizarTablaReportes(empresa, area, textoBusqueda = "", columna = ""
             : ["PRIMER_ACCESO", "ULTIMO_ACCESO", "ULTIMA_ACTIVIDAD"].includes(clave)
                 ? formatearFechaAnalytics(item[clave])
                 : String(item[clave]);
-        return `<td>${escaparTexto(valor)}</td>`;
+        return `<td class="${claseEmpresa.trim()}">${escaparTexto(valor)}</td>`;
     }).join("")}</tr>`);
 
     if (datosPagina.length) {
@@ -359,22 +373,73 @@ function cargarEmpresasReportes(datos) {
             .filter(Boolean)
     )].sort((a, b) => a.localeCompare(b, "es"));
 
-    menu.innerHTML = empresas.map(empresa => `<label class="reportes-opcion-empresa"><input type="checkbox" value="${escaparTexto(empresa)}"><span>${escaparTexto(empresa)}</span></label>`).join("");
-    establecerSelectorPersonalizado("reportesArea", "", "Todas las áreas");
+    menu.innerHTML = `
+        <label class="reportes-opcion-empresa reportes-opcion-todas">
+            <input type="checkbox" id="reportesEmpresasTodas">
+            <span>Seleccionar todas</span>
+        </label>
+        <label class="reportes-busqueda-empresa">
+            <span class="visualmente-oculto">Buscar empresa</span>
+            <input type="search" id="reportesEmpresaBuscar" placeholder="Buscar empresa..." autocomplete="off">
+        </label>
+        <div id="reportesEmpresasLista">
+            ${empresas.map(empresa => `<label class="reportes-opcion-empresa" data-empresa="${escaparTexto(empresa)}"><input type="checkbox" value="${escaparTexto(empresa)}"><span>${escaparTexto(empresa)}</span></label>`).join("")}
+        </div>
+        <p id="reportesEmpresasSinResultados" class="reportes-empresas-sin-resultados" hidden>No hay empresas que comiencen con esa búsqueda.</p>
+    `;
+    establecerSelectorPersonalizado("reportesArea", "", "Áreas");
     dibujarGraficaSesiones([], "");
     renderizarTablaReportes([], "");
 }
 
 function empresasSeleccionadas() {
-    return [...document.querySelectorAll("#reportesEmpresaOpciones input:checked")].map(input => input.value);
+    return [...document.querySelectorAll("#reportesEmpresasLista input:checked")].map(input => input.value);
 }
 
 function actualizarResumenEmpresas() {
     const seleccionadas = empresasSeleccionadas();
     const resumen = document.getElementById("reportesEmpresaResumen");
-    resumen.textContent = seleccionadas.length
-        ? `${seleccionadas.length} empresa${seleccionadas.length === 1 ? "" : "s"} seleccionada${seleccionadas.length === 1 ? "" : "s"}`
-        : "Todas las empresas";
+    const totalEmpresas = document.querySelectorAll("#reportesEmpresasLista input[type=checkbox]").length;
+    resumen.textContent = !seleccionadas.length || seleccionadas.length === totalEmpresas
+        ? "Todas las empresas"
+        : `${seleccionadas.length} empresa${seleccionadas.length === 1 ? "" : "s"} seleccionada${seleccionadas.length === 1 ? "" : "s"}`;
+
+    const todas = document.getElementById("reportesEmpresasTodas");
+    if (todas) {
+        todas.checked = totalEmpresas > 0 && seleccionadas.length === totalEmpresas;
+        todas.indeterminate = seleccionadas.length > 0 && seleccionadas.length < totalEmpresas;
+    }
+}
+
+function normalizarTextoReporte(valor) {
+    return String(valor || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+}
+
+function filtrarOpcionesEmpresas(texto) {
+    const busqueda = normalizarTextoReporte(texto);
+    const opciones = [...document.querySelectorAll("#reportesEmpresasLista .reportes-opcion-empresa")];
+    const coincidencias = opciones.filter(opcion => busqueda && normalizarTextoReporte(opcion.dataset.empresa).startsWith(busqueda));
+
+    opciones.forEach(opcion => {
+        const coincide = coincidencias.includes(opcion);
+        opcion.hidden = Boolean(busqueda) && !coincide;
+        opcion.classList.toggle("coincide-busqueda", coincide);
+        opcion.classList.remove("coincide-busqueda-principal");
+    });
+
+    const aviso = document.getElementById("reportesEmpresasSinResultados");
+    if (aviso) {
+        aviso.hidden = Boolean(busqueda) && !coincidencias.length;
+    }
+
+    if (coincidencias.length) {
+        coincidencias[0].classList.add("coincide-busqueda-principal");
+        coincidencias[0].scrollIntoView({ block: "nearest" });
+    }
 }
 
 function establecerSelectorPersonalizado(nombre, valor, texto) {
@@ -483,7 +548,12 @@ function dibujarGraficaSesiones(empresa, area, desde = "", hasta = "") {
         }
     });
 
-    const paleta = ["#011C3D", "#03254D", "#053161", "#074279", "#095392", "#0E76C0", "#34A9ED", "#9DE3F9"];
+    const paleta = [
+        "#011C3D", "#0E4F92", "#148A9C", "#2A9D8F",
+        "#6A994E", "#F4A261", "#E76F51", "#C44536",
+        "#8E5EA2", "#5E60CE", "#3A86FF", "#00B4D8",
+        "#90BEDE", "#F9C74F", "#F94144", "#577590"
+    ];
     const nombresEmpresas = empresasSeleccionadasActivas.length
         ? empresasSeleccionadasActivas
         : Object.keys(sesionesPorEmpresa);
@@ -518,13 +588,14 @@ function dibujarGraficaSesiones(empresa, area, desde = "", hasta = "") {
         const porcentaje = (item.sesiones / totalSesiones * 100).toFixed(1);
         return `<div class="donut-leyenda-item"><i style="background:${item.color}"></i><span class="donut-empresa">${escaparTexto(item.nombre)}</span><strong>${item.sesiones.toLocaleString("es-GT")}</strong><small>${porcentaje}%</small></div>`;
     }).join("");
+    const encabezadoLeyenda = `<div class="donut-leyenda-cabecera"><span></span><strong>Empresa</strong><strong>Sesiones</strong><strong>%</strong></div>`;
 
     contenedor.innerHTML = `<div class="donut-contenido"><svg class="donut-grafica" viewBox="0 0 360 360" role="img" aria-label="Sesiones acumuladas por empresa">
         <circle class="donut-base" cx="180" cy="180" r="${radio}" />
         ${segmentos}
         <text x="180" y="174" class="donut-total">${totalSesiones.toLocaleString("es-GT")}</text>
         <text x="180" y="198" class="donut-total-label">SESIONES</text>
-    </svg><div class="donut-leyenda">${leyenda}</div></div>`;
+    </svg><div class="donut-leyenda">${encabezadoLeyenda}${leyenda}</div></div>`;
     if (estado) {
         estado.textContent = `${totalSesiones.toLocaleString("es-GT")} sesiones distribuidas entre ${empresas.length} empresa${empresas.length === 1 ? "" : "s"}.`;
     }
@@ -567,6 +638,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const abierto = !menu.hidden;
         menu.hidden = abierto;
         selector.setAttribute("aria-expanded", String(!abierto));
+
+        if (!abierto) {
+            document.getElementById("reportesEmpresaBuscar")?.focus();
+        }
     });
     [
         [selectorArea, "reportesArea"],
@@ -604,21 +679,35 @@ document.addEventListener("DOMContentLoaded", () => {
             actualizarReportes();
         });
     });
-    document.getElementById("reportesEmpresaOpciones").addEventListener("change", () => {
+    document.getElementById("reportesEmpresaOpciones").addEventListener("change", evento => {
+        if (evento.target.id === "reportesEmpresasTodas") {
+            document.querySelectorAll("#reportesEmpresasLista input[type=checkbox]").forEach(casilla => {
+                casilla.checked = evento.target.checked;
+            });
+        }
+
         actualizarResumenEmpresas();
         actualizarReportes();
     });
+    document.getElementById("reportesEmpresaBuscar")?.addEventListener("input", evento => {
+        filtrarOpcionesEmpresas(evento.target.value);
+    });
     limpiarFiltros?.addEventListener("click", () => {
-        document.querySelectorAll("#reportesEmpresaOpciones input[type=checkbox]").forEach(casilla => {
+        document.querySelectorAll("#reportesEmpresasLista input[type=checkbox]").forEach(casilla => {
             casilla.checked = false;
         });
+        const buscarEmpresa = document.getElementById("reportesEmpresaBuscar");
+        if (buscarEmpresa) {
+            buscarEmpresa.value = "";
+            filtrarOpcionesEmpresas("");
+        }
         actualizarResumenEmpresas();
-        establecerSelectorPersonalizado("reportesArea", "", "Todas las áreas");
+        establecerSelectorPersonalizado("reportesArea", "", "Áreas");
         establecerSelectorPersonalizado("reportesColumna", "", "Todas las columnas");
         fechaDesde.value = "";
         fechaHasta.value = "";
-        document.getElementById("reportesDesdeTexto").textContent = "Seleccionar";
-        document.getElementById("reportesHastaTexto").textContent = "Seleccionar";
+        document.getElementById("reportesDesdeTexto").textContent = "Desde";
+        document.getElementById("reportesHastaTexto").textContent = "Hasta";
         actualizarReportes();
     });
     paginacion?.addEventListener("click", evento => {
