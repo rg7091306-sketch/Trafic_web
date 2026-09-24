@@ -25,6 +25,18 @@ function fechaEstadistica(valor) {
     return Number.isNaN(fecha.getTime()) ? null : fecha;
 }
 
+function barraEstadistica(porcentaje) {
+    return `<i><b data-ancho="${porcentaje}"></b></i>`;
+}
+
+function animarBarras(contenedor) {
+    requestAnimationFrame(() => {
+        contenedor.querySelectorAll("[data-ancho]").forEach(barra => {
+            barra.style.width = `${barra.dataset.ancho}%`;
+        });
+    });
+}
+
 function textoCorto(valor, limite = 30) {
     const texto = String(valor || "Sin nombre");
     return texto.length > limite ? `${texto.slice(0, limite - 1)}...` : texto;
@@ -61,13 +73,34 @@ function donutEstadistica(items, total, id) {
     let acumulado = 0;
     const segmentos = items.map((item, indice) => {
         const longitud = item.valor / total * circunferencia;
-        const segmento = `<circle class="estadistica-donut-segment" cx="100" cy="100" r="${radio}" stroke="${coloresEstadisticas[indice % coloresEstadisticas.length]}" stroke-dasharray="${longitud} ${circunferencia - longitud}" stroke-dashoffset="${-acumulado}" />`;
+        const segmento = `<circle class="estadistica-donut-segment" cx="100" cy="100" r="${radio}" stroke="${coloresEstadisticas[indice % coloresEstadisticas.length]}" stroke-dasharray="0 ${circunferencia}" data-longitud="${longitud}" data-hueco="${circunferencia - longitud}" stroke-dashoffset="${-acumulado}"><title>${escaparEstadistica(item.nombre)}: ${item.valor.toLocaleString("es-GT")} (${(item.valor / total * 100).toFixed(1)}%)</title></circle>`;
         acumulado += longitud;
         return segmento;
     }).join("");
     const leyenda = items.map((item, indice) => `<div class="estadistica-leyenda-item"><i style="background:${coloresEstadisticas[indice % coloresEstadisticas.length]}"></i><span>${escaparEstadistica(item.nombre)}</span><strong>${(item.valor / total * 100).toFixed(1)}%</strong></div>`).join("");
 
     contenedor.innerHTML = `<div class="estadistica-donut-layout"><svg class="estadistica-donut" viewBox="0 0 200 200" role="img" aria-label="Distribución de usuarios activos por país"><circle class="estadistica-donut-base" cx="100" cy="100" r="${radio}" />${segmentos}<text x="100" y="104" class="estadistica-donut-total">${total.toLocaleString("es-GT")}</text></svg><div class="estadistica-leyenda">${leyenda}</div></div>`;
+
+    requestAnimationFrame(() => {
+        contenedor.querySelectorAll(".estadistica-donut-segment").forEach(segmento => {
+            segmento.style.strokeDasharray = `${segmento.dataset.longitud} ${segmento.dataset.hueco}`;
+        });
+    });
+}
+
+function rutaSuavizadaEstadistica(puntos) {
+    if (puntos.length < 3) {
+        return puntos.map((punto, indice) => `${indice ? "L" : "M"} ${punto.x.toFixed(1)} ${punto.y.toFixed(1)}`).join(" ");
+    }
+
+    let ruta = `M ${puntos[0].x.toFixed(1)} ${puntos[0].y.toFixed(1)}`;
+    for (let indice = 0; indice < puntos.length - 1; indice++) {
+        const actual = puntos[indice];
+        const siguiente = puntos[indice + 1];
+        const puntoMedioX = (actual.x + siguiente.x) / 2;
+        ruta += ` C ${puntoMedioX.toFixed(1)} ${actual.y.toFixed(1)}, ${puntoMedioX.toFixed(1)} ${siguiente.y.toFixed(1)}, ${siguiente.x.toFixed(1)} ${siguiente.y.toFixed(1)}`;
+    }
+    return ruta;
 }
 
 function renderizarLineaEstadistica(id, series, maximo, unidad = "", seriesSecundaria = []) {
@@ -80,21 +113,27 @@ function renderizarLineaEstadistica(id, series, maximo, unidad = "", seriesSecun
 
     const ancho = 620;
     const alto = 190;
+    const base = alto - 28;
     const crearPuntos = valores => valores.map((item, indice) => {
         const x = series.length === 1 ? ancho / 2 : 12 + indice / (series.length - 1) * (ancho - 24);
-        const y = alto - 28 - (item.valor / maximo) * (alto - 50);
+        const y = base - (item.valor / maximo) * (alto - 50);
         return { ...item, x, y };
     });
     const puntos = crearPuntos(series);
     const puntosSecundarios = crearPuntos(seriesSecundaria);
-    const construirRuta = valores => valores.map((punto, indice) => `${indice ? "L" : "M"} ${punto.x.toFixed(1)} ${punto.y.toFixed(1)}`).join(" ");
     const construirPuntosSvg = (valores, clase) => valores.map(punto => `<circle cx="${punto.x}" cy="${punto.y}" r="3.5" class="estadistica-linea-punto ${clase}"><title>${escaparEstadistica(punto.etiqueta)}: ${punto.valor.toLocaleString("es-GT")} ${unidad}</title></circle>`).join("");
     const etiquetas = puntos.filter((_, indice) => indice === 0 || indice === puntos.length - 1 || indice % 3 === 0).map(punto => `<text x="${punto.x}" y="${alto - 5}" class="estadistica-linea-etiqueta" text-anchor="middle">${punto.etiqueta}</text>`).join("");
 
-    const segundaLinea = seriesSecundaria.length ? `<path d="${construirRuta(puntosSecundarios)}" class="estadistica-svg-linea estadistica-svg-linea-secundaria" />${construirPuntosSvg(puntosSecundarios, "estadistica-linea-punto-secundario")}` : "";
-    const leyenda = seriesSecundaria.length ? `<div class="estadistica-mini-series"><span><i class="serie-nueva"></i>Nuevos</span><span><i class="serie-recurrente"></i>Recurrentes</span></div>` : "";
+    const trazoPrincipal = rutaSuavizadaEstadistica(puntos);
+    const areaPrincipal = puntos.length > 1 ? `${trazoPrincipal} L ${puntos[puntos.length - 1].x.toFixed(1)} ${base} L ${puntos[0].x.toFixed(1)} ${base} Z` : "";
 
-    contenedor.innerHTML = `${leyenda}<svg class="estadistica-linea-svg" viewBox="0 0 ${ancho} ${alto}" role="img" aria-label="Gráfica de actividad"><line x1="12" y1="${alto - 28}" x2="${ancho - 12}" y2="${alto - 28}" class="estadistica-svg-eje" /><line x1="12" y1="65" x2="${ancho - 12}" y2="65" class="estadistica-svg-guia" /><line x1="12" y1="20" x2="${ancho - 12}" y2="20" class="estadistica-svg-guia" /><path d="${construirRuta(puntos)}" class="estadistica-svg-linea" />${segundaLinea}${construirPuntosSvg(puntos, "")}${etiquetas}</svg>`;
+    const segundaLinea = seriesSecundaria.length
+        ? `<path d="${rutaSuavizadaEstadistica(puntosSecundarios)}" class="estadistica-svg-linea estadistica-svg-linea-secundaria" />${construirPuntosSvg(puntosSecundarios, "estadistica-linea-punto-secundario")}`
+        : "";
+    const leyenda = seriesSecundaria.length ? `<div class="estadistica-mini-series"><span><i class="serie-nueva"></i>Nuevos</span><span><i class="serie-recurrente"></i>Recurrentes</span></div>` : "";
+    const idGradiente = `gradiente-${id}`;
+
+    contenedor.innerHTML = `${leyenda}<svg class="estadistica-linea-svg" viewBox="0 0 ${ancho} ${alto}" role="img" aria-label="Gráfica de actividad"><defs><linearGradient id="${idGradiente}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="currentColor" stop-opacity="0.55" /><stop offset="100%" stop-color="currentColor" stop-opacity="0" /></linearGradient></defs><line x1="12" y1="${base}" x2="${ancho - 12}" y2="${base}" class="estadistica-svg-eje" /><line x1="12" y1="65" x2="${ancho - 12}" y2="65" class="estadistica-svg-guia" /><line x1="12" y1="20" x2="${ancho - 12}" y2="20" class="estadistica-svg-guia" />${areaPrincipal ? `<path d="${areaPrincipal}" class="estadistica-svg-area estadistica-svg-linea" fill="url(#${idGradiente})" stroke="none" />` : ""}<path d="${trazoPrincipal}" class="estadistica-svg-linea" />${segundaLinea}${construirPuntosSvg(puntos, "")}${etiquetas}</svg>`;
 }
 
 function renderizarEstadisticas(datos) {
@@ -144,9 +183,11 @@ function renderizarEstadisticas(datos) {
 
     const titulosOrdenados = Object.entries(titulos).sort((a, b) => b[1] - a[1]).slice(0, 7);
     const tituloMaximo = Math.max(...titulosOrdenados.map(([, valor]) => valor), 1);
-    document.getElementById("estadisticaTitulos").innerHTML = titulosOrdenados.length
-        ? `<div class="estadistica-tabla">${titulosOrdenados.map(([nombre, valor]) => `<div class="estadistica-fila"><span title="${escaparEstadistica(nombre)}">${escaparEstadistica(textoCorto(nombre, 32))}</span><strong>${valor.toLocaleString("es-GT")}</strong><i><b style="width:${valor / tituloMaximo * 100}%"></b></i></div>`).join("")}</div>`
+    const contenedorTitulos = document.getElementById("estadisticaTitulos");
+    contenedorTitulos.innerHTML = titulosOrdenados.length
+        ? `<div class="estadistica-tabla">${titulosOrdenados.map(([nombre, valor]) => `<div class="estadistica-fila"><span title="${escaparEstadistica(nombre)}">${escaparEstadistica(textoCorto(nombre, 32))}</span><strong>${valor.toLocaleString("es-GT")}</strong>${barraEstadistica(valor / tituloMaximo * 100)}</div>`).join("")}</div>`
         : '<p class="estadistica-vacia">Sin datos disponibles</p>';
+    animarBarras(contenedorTitulos);
 
     const paisesOrdenadosTodos = Object.entries(paises)
         .sort((a, b) => b[1] - a[1])
@@ -155,9 +196,11 @@ function renderizarEstadisticas(datos) {
     const paisesOrdenados = paisesOrdenadosTodos.slice(0, 6);
     donutEstadistica(paisesOrdenados, totalPaises, "estadisticaPaisesDonut");
     const paisMaximo = Math.max(...paisesOrdenados.map(item => item.valor), 1);
-    document.getElementById("estadisticaPaises").innerHTML = paisesOrdenados.length
-        ? `<div class="estadistica-barras">${paisesOrdenados.map(item => `<div class="estadistica-barra-fila"><span>${escaparEstadistica(item.nombre)}</span><i><b style="width:${item.valor / paisMaximo * 100}%"></b></i><strong>${item.valor.toLocaleString("es-GT")}</strong></div>`).join("")}</div>`
+    const contenedorPaises = document.getElementById("estadisticaPaises");
+    contenedorPaises.innerHTML = paisesOrdenados.length
+        ? `<div class="estadistica-barras">${paisesOrdenados.map(item => `<div class="estadistica-barra-fila"><span>${escaparEstadistica(item.nombre)}</span>${barraEstadistica(item.valor / paisMaximo * 100)}<strong>${item.valor.toLocaleString("es-GT")}</strong></div>`).join("")}</div>`
         : '<p class="estadistica-vacia">Sin datos disponibles</p>';
+    animarBarras(contenedorPaises);
 
     const actividadOrdenada = Object.entries(actividad).sort((a, b) => a[0].localeCompare(b[0])).slice(-12);
     const actividadMaxima = Math.max(...actividadOrdenada.map(([, valor]) => valor), 1);
@@ -173,9 +216,11 @@ function renderizarEstadisticas(datos) {
 
     const interaccionOrdenada = Object.entries(interaccion).filter(([, valor]) => valor > 0).sort((a, b) => b[1] - a[1]).slice(0, 6);
     const interaccionMaxima = Math.max(...interaccionOrdenada.map(([, valor]) => valor), 1);
-    document.getElementById("estadisticaInteraccion").innerHTML = interaccionOrdenada.length
-        ? `<div class="estadistica-barras">${interaccionOrdenada.map(([nombre, valor]) => `<div class="estadistica-barra-fila"><span>${escaparEstadistica(textoCorto(nombre, 28))}</span><i><b style="width:${valor / interaccionMaxima * 100}%"></b></i><strong>${valor.toLocaleString("es-GT")} s</strong></div>`).join("")}</div>`
+    const contenedorInteraccion = document.getElementById("estadisticaInteraccion");
+    contenedorInteraccion.innerHTML = interaccionOrdenada.length
+        ? `<div class="estadistica-barras">${interaccionOrdenada.map(([nombre, valor]) => `<div class="estadistica-barra-fila"><span>${escaparEstadistica(textoCorto(nombre, 28))}</span>${barraEstadistica(valor / interaccionMaxima * 100)}<strong>${valor.toLocaleString("es-GT")} s</strong></div>`).join("")}</div>`
         : '<p class="estadistica-vacia">Sin tiempos disponibles</p>';
+    animarBarras(contenedorInteraccion);
 
     const fechasInteraccion = Object.entries(interaccionPorFecha).sort((a, b) => a[0].localeCompare(b[0])).slice(-12).map(([etiqueta, valor]) => ({ etiqueta, valor }));
     renderizarLineaEstadistica("estadisticaTiempoFecha", fechasInteraccion, Math.max(...fechasInteraccion.map(item => item.valor), 1), "segundos");
@@ -194,11 +239,15 @@ function renderizarEstadisticas(datos) {
 
     const usuariosTitulo = Object.entries(usuariosPorTitulo).sort((a, b) => b[1] - a[1]).slice(0, 6);
     const usuariosTituloMaximo = Math.max(...usuariosTitulo.map(([, valor]) => valor), 1);
-    document.getElementById("estadisticaUsuariosTitulo").innerHTML = `<div class="estadistica-barras">${usuariosTitulo.map(([nombre, valor]) => `<div class="estadistica-barra-fila"><span>${escaparEstadistica(textoCorto(nombre, 38))}</span><i><b style="width:${valor / usuariosTituloMaximo * 100}%"></b></i><strong>${valor.toLocaleString("es-GT")}</strong></div>`).join("")}</div>`;
+    const contenedorUsuariosTitulo = document.getElementById("estadisticaUsuariosTitulo");
+    contenedorUsuariosTitulo.innerHTML = `<div class="estadistica-barras">${usuariosTitulo.map(([nombre, valor]) => `<div class="estadistica-barra-fila"><span>${escaparEstadistica(textoCorto(nombre, 38))}</span>${barraEstadistica(valor / usuariosTituloMaximo * 100)}<strong>${valor.toLocaleString("es-GT")}</strong></div>`).join("")}</div>`;
+    animarBarras(contenedorUsuariosTitulo);
 
     const sistemasOrdenados = Object.entries(sistemas).sort((a, b) => b[1] - a[1]).slice(0, 6);
     const sistemaMaximo = Math.max(...sistemasOrdenados.map(([, valor]) => valor), 1);
-    document.getElementById("estadisticaSistemas").innerHTML = `<div class="estadistica-barras">${sistemasOrdenados.map(([nombre, valor]) => `<div class="estadistica-barra-fila"><span>${escaparEstadistica(nombre)}</span><i><b style="width:${valor / sistemaMaximo * 100}%"></b></i><strong>${valor.toLocaleString("es-GT")}</strong></div>`).join("")}</div>`;
+    const contenedorSistemas = document.getElementById("estadisticaSistemas");
+    contenedorSistemas.innerHTML = `<div class="estadistica-barras">${sistemasOrdenados.map(([nombre, valor]) => `<div class="estadistica-barra-fila"><span>${escaparEstadistica(nombre)}</span>${barraEstadistica(valor / sistemaMaximo * 100)}<strong>${valor.toLocaleString("es-GT")}</strong></div>`).join("")}</div>`;
+    animarBarras(contenedorSistemas);
 }
 
 document.addEventListener("analytics:loaded", evento => renderizarEstadisticas(evento.detail.datos));

@@ -16,51 +16,41 @@
                     <h1>Reportes</h1>
                     <p>Consulta y seguimiento de reportes de tráfico</p>
                 </div>
-
-                <div class="estado">
-                    <span class="estado-punto"></span>
-                    Conectado a Google Analytics
-                </div>
             </header>
 
             <main class="contenedor">
                 <section class="reportes-panel">
                     <div class="reportes-header">
-                       
-
                         <div class="reportes-selector reportes-selector-multiple">
-                            <span>Empresa</span>
                             <button type="button" id="reportesEmpresaTrigger" class="reportes-multiple-trigger" aria-expanded="false" aria-controls="reportesEmpresaOpciones">
-                                <span id="reportesEmpresaResumen">Todas las empresas</span>
+                                <span id="reportesEmpresaResumen"><b>Empresas</b></span>
                                 <span class="reportes-multiple-chevron">⌄</span>
                             </button>
                             <div id="reportesEmpresaOpciones" class="reportes-multiple-menu" hidden></div>
                         </div>
 
                         <div class="reportes-selector reportes-selector-area reportes-selector-custom">
-                            <span>Área</span>
                             <button type="button" id="reportesAreaTrigger" class="reportes-multiple-trigger" aria-expanded="false" aria-controls="reportesAreaOpciones">
-                                <span id="reportesAreaResumen">Todas las áreas</span>
+                                <span id="reportesAreaResumen"><b>Áreas</b></span>
                                 <span class="reportes-multiple-chevron">⌄</span>
                             </button>
                             <div id="reportesAreaOpciones" class="reportes-multiple-menu" hidden></div>
                         </div>
 
                         <div class="reportes-periodo" aria-label="Filtro de periodo">
-                            <span>Periodo</span>
                             <div class="reportes-periodo-controles">
-                                <label for="reportesDesde">Desde</label>
+                                <label for="reportesDesde"></label>
                                 <div class="reportes-fecha">
                                     <button type="button" id="reportesDesdeTrigger" class="reportes-fecha-trigger" aria-expanded="false" aria-controls="reportesDesdeCalendario">
-                                        <span id="reportesDesdeTexto">Seleccionar</span><span class="reportes-fecha-icono">▦</span>
+                                        <span id="reportesDesdeTexto" data-placeholder="Desde">Desde</span><span class="reportes-icono"><img class="reportes-icono-normal" src="../img/calendario.png" alt="Abrir calendario"><img class="reportes-icono-hover" src="../img/calendario2.png" alt=""></span>
                                     </button>
                                     <input type="hidden" id="reportesDesde">
                                     <div id="reportesDesdeCalendario" class="reportes-calendario" hidden></div>
                                 </div>
-                                <label for="reportesHasta">Hasta</label>
+                                <label for="reportesHasta"></label>
                                 <div class="reportes-fecha">
                                     <button type="button" id="reportesHastaTrigger" class="reportes-fecha-trigger" aria-expanded="false" aria-controls="reportesHastaCalendario">
-                                        <span id="reportesHastaTexto">Seleccionar</span><span class="reportes-fecha-icono">▦</span>
+                                        <span id="reportesHastaTexto" data-placeholder="Hasta">Hasta</span><span class="reportes-icono"><img class="reportes-icono-normal" src="../img/calendario.png" alt="Abrir calendario"><img class="reportes-icono-hover" src="../img/calendario2.png" alt=""></span>
                                     </button>
                                     <input type="hidden" id="reportesHasta">
                                     <div id="reportesHastaCalendario" class="reportes-calendario" hidden></div>
@@ -70,7 +60,7 @@
 
                         <div class="reportes-buscador reportes-selector-custom">
                             <button type="button" id="reportesColumnaTrigger" class="reportes-multiple-trigger" aria-expanded="false" aria-controls="reportesColumnaOpciones">
-                                <span id="reportesColumnaResumen">Todas las columnas</span>
+                                <span id="reportesColumnaResumen"><b>Características</b></span>
                                 <span class="reportes-multiple-chevron">⌄</span>
                             </button>
                             <div id="reportesColumnaOpciones" class="reportes-multiple-menu" hidden>
@@ -106,8 +96,7 @@
                         </div>
 
                         <button type="button" id="reportesLimpiarFiltros" class="reportes-limpiar-filtros" title="Limpiar filtros">
-                            <span aria-hidden="true">↺</span>
-                            Limpiar filtros
+                            <span aria-hidden="true" class="reportes-icono"><img class="reportes-icono-normal" src="../img/quitar.png" alt=""><img class="reportes-icono-hover" src="../img/quitar2.png" alt=""></span>
                         </button>
                     </div>
 
@@ -160,6 +149,7 @@
                             <tbody id="tablaReportesBody"></tbody>
                         </table>
                     </div>
+                    <div id="paginacionReportes" class="paginacion-reportes"></div>
                 </section>
             </main>
 
