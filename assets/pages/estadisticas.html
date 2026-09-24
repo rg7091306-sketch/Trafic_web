@@ -3,81 +3,216 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estadísticas</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <title>Estadísticas · Tráfico web · RED Intelfon</title>
+    <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <div class="dashboard-shell">
-        <div id="sidebar-container"></div>
+<div class="app">
+    <div id="sidebar-container"></div>
 
-        <div class="dashboard-content">
-            <header class="header">
-                <div class="header-texto">
-                    <h1>Estadísticas</h1>
-                    <p>Resumen visual de sesiones y actividad</p>
+    <div class="main">
+        <header class="topbar">
+            <button class="mobile-toggle" type="button" data-sidebar-toggle aria-label="Mostrar u ocultar menú">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <div class="topbar-title">Tráfico web <small>Estadísticas</small></div>
+            <div class="topbar-right">
+                <div class="date-pill"><span class="dot-live pulse"></span><span>Actualizado: <span id="currentDate">--</span></span></div>
+            </div>
+        </header>
+
+        <main class="content">
+
+            <!-- ENCABEZADO ───────────────────────────────────────────── -->
+            <div class="page-header">
+                <div>
+                    <div class="page-eyebrow">Tráfico web · Audiencia y comportamiento</div>
+                    <h1 class="page-title">Estadísticas</h1>
+                    <p class="page-sub" id="pageSync">Cargando datos…</p>
+                </div>
+                <div class="header-actions">
+                    <div class="hero-pills">
+                        <span><b id="heroDashboards">—</b> dashboards</span>
+                        <span><b id="heroEmpresas">—</b> empresas</span>
+                        <span><b id="heroAreas">—</b> áreas</span>
+                    </div>
+                    <button class="filter-chip" id="btnRefresh" type="button">↻ Actualizar datos</button>
+                </div>
+            </div>
+
+            <div id="errorAnalytics" class="error-box" hidden></div>
+            <div id="globalLoader" class="loader"><div class="spinner"></div></div>
+
+            <div id="mainContent" hidden>
+
+                <!-- FILTROS ──────────────────────────────────────────── -->
+                <div class="filter-bar" id="filtrosAnalytics">
+                    <div class="filter-group">
+                        <span class="filter-label">Área</span>
+                        <span id="filtroAreas"></span>
+                    </div>
+                    <div class="filter-group">
+                        <span class="filter-label">Empresa</span>
+                        <div class="drop">
+                            <button class="drop-trigger" id="empresaTrigger" type="button" aria-expanded="false">
+                                <span id="empresaLabel">Todas las empresas</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                            <div class="drop-panel" id="empresaPanel" hidden>
+                                <input class="drop-search" id="empresaBuscar" placeholder="Buscar empresa…" autocomplete="off">
+                                <div class="drop-list" id="empresaLista"></div>
+                                <div class="drop-meta" id="empresaMeta"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <button class="filter-chip ghost" id="btnLimpiarFiltros" type="button">✕ Limpiar filtros</button>
+                    </div>
                 </div>
 
-            </header>
+                <!-- TABS ─────────────────────────────────────────────── -->
+                <div class="tabs" id="tabsEstadisticas">
+                    <button class="tab-btn active" type="button" data-tab="audiencia">Audiencia</button>
+                    <button class="tab-btn" type="button" data-tab="tecnologia">Tecnología y origen</button>
+                    <button class="tab-btn" type="button" data-tab="interaccion">Interacción y eventos</button>
+                </div>
 
-            <main class="contenedor">
-                <section class="estadisticas-grid">
-                    <article class="estadistica-card estadistica-card-lista">
-                        <h2>Sesiones por título de página</h2>
-                        <div id="estadisticaTitulos"></div>
-                    </article>
+                <!-- TAB 1 — AUDIENCIA ────────────────────────────────── -->
+                <div id="tab-audiencia">
+                    <div class="kpi-grid">
+                        <div class="kpi"><div class="kpi-label">Total de usuarios</div><div class="kpi-value" id="audUsuarios">—</div><div class="kpi-sub" id="audUsuariosSub">Usuarios únicos</div></div>
+                        <div class="kpi"><div class="kpi-label">Usuarios nuevos</div><div class="kpi-value txt-cyan" id="audNuevos">—</div><div class="kpi-sub">Primera visita</div></div>
+                        <div class="kpi"><div class="kpi-label">Usuarios recurrentes</div><div class="kpi-value txt-green" id="audRecurrentes">—</div><div class="kpi-sub" id="audRecurrentesSub">Regresaron</div></div>
+                        <div class="kpi"><div class="kpi-label">Países</div><div class="kpi-value" id="audPaises">—</div><div class="kpi-sub" id="audPaisesSub">—</div></div>
+                        <div class="kpi"><div class="kpi-label">Ciudades</div><div class="kpi-value" id="audCiudades">—</div><div class="kpi-sub" id="audCiudadesSub">—</div></div>
+                    </div>
 
-                    <article class="estadistica-card">
-                        <h2>Usuarios activos por país</h2>
-                        <div id="estadisticaPaisesDonut"></div>
-                    </article>
+                    <div class="two-col">
+                        <div class="content-panel">
+                            <h2>Usuarios activos por país</h2>
+                            <p class="caption">Un usuario que abre varios dashboards se cuenta en cada uno</p>
+                            <div id="rankPaises"></div>
+                        </div>
+                        <div class="content-panel">
+                            <h2>Usuarios nuevos y recurrentes</h2>
+                            <p class="caption">Usuarios que regresaron frente a los de primera visita</p>
+                            <div id="donaRecurrencia"></div>
+                        </div>
+                    </div>
 
-                    <article class="estadistica-card">
-                        <h2>Usuarios activos por país</h2>
-                        <div id="estadisticaPaises"></div>
-                    </article>
+                    <div class="two-col even">
+                        <div class="content-panel">
+                            <h2>Ciudades</h2>
+                            <p class="caption">Usuarios activos por ciudad</p>
+                            <div id="rankCiudades"></div>
+                        </div>
+                        <div class="content-panel">
+                            <h2>Regiones</h2>
+                            <p class="caption">Usuarios activos por departamento o región</p>
+                            <div id="rankRegiones"></div>
+                        </div>
+                    </div>
 
-                    <article class="estadistica-card estadistica-card-wide">
-                        <h2>Actividad de los usuarios a lo largo del tiempo</h2>
-                        <div id="estadisticaActividad"></div>
-                    </article>
+                    <div class="content-panel">
+                        <h2>Usuarios activos por dashboard</h2>
+                        <p class="caption">Título de página y pantalla registrado en Analytics</p>
+                        <div id="rankUsuariosDashboard"></div>
+                    </div>
+                </div>
 
-                    <article class="estadistica-card estadistica-card-wide">
-                        <h2>Tiempo de interacción medio por título</h2>
-                        <div id="estadisticaInteraccion"></div>
-                    </article>
+                <!-- TAB 2 — TECNOLOGÍA Y ORIGEN ──────────────────────── -->
+                <div id="tab-tecnologia" hidden>
+                    <div class="two-col even">
+                        <div class="content-panel">
+                            <h2>Sistemas operativos</h2>
+                            <p class="caption">Usuarios activos por sistema operativo</p>
+                            <div id="rankSistemas"></div>
+                        </div>
+                        <div class="content-panel">
+                            <h2>Categoría de dispositivo</h2>
+                            <p class="caption">Escritorio, móvil y tablet</p>
+                            <div id="donaDispositivos"></div>
+                        </div>
+                    </div>
 
-                    <article class="estadistica-card estadistica-card-wide">
-                        <h2>Fidelización de usuarios a lo largo del tiempo</h2>
-                        <div id="estadisticaFidelizacion"></div>
-                    </article>
+                    <div class="two-col even">
+                        <div class="content-panel">
+                            <h2>Navegadores</h2>
+                            <p class="caption">Usuarios activos por navegador</p>
+                            <div id="rankNavegadores"></div>
+                        </div>
+                        <div class="content-panel">
+                            <h2>Fuentes de sesión</h2>
+                            <p class="caption">Desde dónde llegan las sesiones · (direct) = acceso directo al enlace</p>
+                            <div id="rankFuentes"></div>
+                        </div>
+                    </div>
+                </div>
 
-                    <article class="estadistica-card estadistica-card-wide">
-                        <h2>Tiempo de interacción medio por usuario activo</h2>
-                        <div id="estadisticaTiempoFecha"></div>
-                    </article>
+                <!-- TAB 3 — INTERACCIÓN Y EVENTOS ────────────────────── -->
+                <div id="tab-interaccion" hidden>
+                    <div class="kpi-grid">
+                        <div class="kpi"><div class="kpi-label">Eventos</div><div class="kpi-value" id="intEventos">—</div><div class="kpi-sub" id="intEventosSub">—</div></div>
+                        <div class="kpi"><div class="kpi-label">Vistas</div><div class="kpi-value" id="intVistas">—</div><div class="kpi-sub" id="intVistasSub">—</div></div>
+                        <div class="kpi"><div class="kpi-label">Tasa de interacción</div><div class="kpi-value txt-green" id="intTasa">—</div><div class="kpi-sub" id="intTasaSub">—</div></div>
+                        <div class="kpi"><div class="kpi-label">Tiempo medio por sesión</div><div class="kpi-value txt-cyan" id="intTiempo">—</div><div class="kpi-sub" id="intTiempoSub">—</div></div>
+                    </div>
 
-                    <article class="estadistica-card estadistica-card-wide">
-                        <div id="estadisticaTotales" class="estadistica-metricas"></div>
-                    </article>
+                    <div class="content-panel">
+                        <h2>Eventos y vistas a lo largo del tiempo</h2>
+                        <p class="caption">Por día, según la fecha de última actividad de cada dashboard</p>
+                        <div class="line-chart" id="chartEventos"></div>
+                    </div>
 
-                    <article class="estadistica-card estadistica-card-wide">
-                        <h2>Usuarios activos por título de página</h2>
-                        <div id="estadisticaUsuariosTitulo"></div>
-                    </article>
+                    <div class="two-col even">
+                        <div class="content-panel">
+                            <h2>Eventos por tipo</h2>
+                            <p class="caption">page_view, scroll, session_start, user_engagement, first_visit…</p>
+                            <div id="columnasEventos"></div>
+                        </div>
+                        <div class="content-panel">
+                            <h2>Tiempo medio de interacción por dashboard</h2>
+                            <p class="caption">Promedio por sesión en cada título de página</p>
+                            <div id="rankTiempo"></div>
+                        </div>
+                    </div>
 
-                    <article class="estadistica-card">
-                        <h2>Usuarios activos por sistema operativo</h2>
-                        <div id="estadisticaSistemas"></div>
-                    </article>
-                </section>
+                    <div class="content-panel">
+                        <h2>Detalle de interacción por dashboard</h2>
+                        <p class="caption">Ordenado por sesiones · el tiempo es el promedio por sesión</p>
+                        <div class="table-wrap tall">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Empresa</th>
+                                        <th>Dashboard</th>
+                                        <th class="num">Usuarios</th>
+                                        <th class="num">Sesiones</th>
+                                        <th class="num">Con interacción</th>
+                                        <th class="num">% interacción</th>
+                                        <th class="num">Tiempo medio</th>
+                                        <th class="num">Vistas</th>
+                                        <th class="num">Eventos</th>
+                                        <th>Última actividad</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaInteraccion"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
-                <div id="errorAnalytics"></div>
-            </main>
-        </div>
+            </div>
+
+            <div class="footnote">
+                Tráfico web · Google Analytics vía Apps Script &nbsp;·&nbsp; Última sincronización: <code id="footerTime">—</code>
+            </div>
+        </main>
     </div>
+</div>
 
-    <script src="/js/sidebar.js"></script>
-    <script src="/js/control.js"></script>
-    <script src="/js/estadisticas.js"></script>
+<script src="../js/sidebar.js"></script>
+<script src="../js/control.js"></script>
+<script src="../js/estadisticas.js"></script>
 </body>
 </html>

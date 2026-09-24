@@ -3,72 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control General de Tráfico</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <title>Control general · Tráfico web · RED Intelfon</title>
+    <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <div class="dashboard-shell">
-        <div id="sidebar-container"></div>
-        <div class="dashboard-content">
-            <header class="header">
-                <div class="header-texto">
-                    <h1>Control General de Tráfico</h1>
-                    <p>Monitoreo de actividad de dashboards y usuarios</p>
+<div class="app">
+    <div id="sidebar-container"></div>
+
+    <div class="main">
+        <header class="topbar">
+            <button class="mobile-toggle" type="button" data-sidebar-toggle aria-label="Mostrar u ocultar menú">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <div class="topbar-title">Tráfico web <small>Control general</small></div>
+            <div class="topbar-right">
+                <div class="date-pill"><span class="dot-live pulse"></span><span>Actualizado: <span id="currentDate">--</span></span></div>
+            </div>
+        </header>
+
+        <main class="content">
+
+            <!-- ENCABEZADO ───────────────────────────────────────────── -->
+            <div class="page-header">
+                <div>
+                    <div class="page-eyebrow">Tráfico web · Google Analytics</div>
+                    <h1 class="page-title">Control general de tráfico</h1>
+                    <p class="page-sub" id="pageSync">Cargando datos…</p>
                 </div>
-            </header>
-            <main class="contenedor">
-                <section id="view-general" class="view-panel">
-                    <section class="uso-dashboard-card">
-                        <div class="chart-header">
-                            <h3>Uso de dashboards</h3>
-                            <p>Comparación entre dashboards utilizados y no utilizados.</p>
-                        </div>
-                        <div id="chartUsoDashboards" class="uso-dashboard-chart"></div>
-                    </section>
-
-                    <div class="chart-card chart-card-wide">
-                        <div class="chart-header">
-                            <h3>Resumen general</h3>
-                        </div>
-                        <div id="chartGeneral" class="chart-bars"></div>
+                <div class="header-actions">
+                    <div class="hero-pills">
+                        <span><b id="heroDashboards">—</b> dashboards</span>
+                        <span><b id="heroEmpresas">—</b> empresas</span>
+                        <span><b id="heroAreas">—</b> áreas</span>
                     </div>
-                    <section class="kpis">
+                    <button class="filter-chip" id="btnRefresh" type="button">↻ Actualizar datos</button>
+                </div>
+            </div>
 
-                        <div class="kpi">
-                            <div class="kpi-etiqueta">Dashboards</div>
-                            <div class="kpi-valor" id="kpiDashboards">-</div>
-                        </div>
+            <div id="errorAnalytics" class="error-box" hidden></div>
+            <div id="globalLoader" class="loader"><div class="spinner"></div></div>
 
-                        <div class="kpi">
-                            <div class="kpi-etiqueta">Usuarios activos</div>
-                            <div class="kpi-valor" id="kpiUsuarios">-</div>
-                        </div>
+            <div id="mainContent" hidden>
 
-                        <div class="kpi">
-                            <div class="kpi-etiqueta">Sesiones</div>
-                            <div class="kpi-valor" id="kpiSesiones">-</div>
-                        </div>
-
-                        <div class="kpi">
-                            <div class="kpi-etiqueta">Vistas</div>
-                            <div class="kpi-valor" id="kpiVistas">-</div>
-                        </div>
-
-                    </section>
-                    <section class="general-graficas" aria-label="Gráficas generales">
-                        <article class="general-grafica-card">
-                            <div class="chart-header">
-                                <h3>Resumen general de actividad</h3>
+                <!-- FILTROS ──────────────────────────────────────────── -->
+                <div class="filter-bar" id="filtrosAnalytics">
+                    <div class="filter-group">
+                        <span class="filter-label">Área</span>
+                        <span id="filtroAreas"></span>
+                    </div>
+                    <div class="filter-group">
+                        <span class="filter-label">Empresa</span>
+                        <div class="drop">
+                            <button class="drop-trigger" id="empresaTrigger" type="button" aria-expanded="false">
+                                <span id="empresaLabel">Todas las empresas</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                            <div class="drop-panel" id="empresaPanel" hidden>
+                                <input class="drop-search" id="empresaBuscar" placeholder="Buscar empresa…" autocomplete="off">
+                                <div class="drop-list" id="empresaLista"></div>
+                                <div class="drop-meta" id="empresaMeta"></div>
                             </div>
-                            <div id="chartInteraccion" class="general-linea-grafica"></div>
-                        </article>
-                    </section>
-                    <div id="errorAnalytics"></div>
-                </section>
-            </main>
-        </div>
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <button class="filter-chip ghost" id="btnLimpiarFiltros" type="button">✕ Limpiar filtros</button>
+                    </div>
+                </div>
+
+                <!-- KPIs ─────────────────────────────────────────────── -->
+                <div class="kpi-grid">
+                    <div class="kpi">
+                        <div class="kpi-label">Total de usuarios</div>
+                        <div class="kpi-value" id="kpiUsuarios">—</div>
+                        <div class="kpi-sub" id="kpiUsuariosSub">Usuarios únicos</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Sesiones</div>
+                        <div class="kpi-value" id="kpiSesiones">—</div>
+                        <div class="kpi-sub" id="kpiSesionesSub">—</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Vistas</div>
+                        <div class="kpi-value" id="kpiVistas">—</div>
+                        <div class="kpi-sub">Páginas vistas</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Vistas por sesión</div>
+                        <div class="kpi-value txt-cyan" id="kpiVistasSesion">—</div>
+                        <div class="kpi-sub">Promedio</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Eventos</div>
+                        <div class="kpi-value" id="kpiEventos">—</div>
+                        <div class="kpi-sub" id="kpiEventosSub">—</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Usuarios recurrentes</div>
+                        <div class="kpi-value txt-green" id="kpiRecurrentes">—</div>
+                        <div class="kpi-sub" id="kpiRecurrentesSub">Regresaron</div>
+                    </div>
+                </div>
+
+                <!-- INTERACCIÓN ──────────────────────────────────────── -->
+                <div class="content-panel">
+                    <h2>Interacción de los usuarios</h2>
+                    <p class="caption">Tiempo que los usuarios pasan activos dentro de los dashboards · la gráfica muestra el tiempo acumulado por día</p>
+                    <div class="stats">
+                        <div class="stat"><span>Tiempo medio por usuario activo</span><b id="statTiempoUsuario">—</b></div>
+                        <div class="stat"><span>Sesiones con interacción por usuario</span><b id="statSesionesUsuario">—</b></div>
+                        <div class="stat"><span>Tiempo medio por sesión</span><b id="statTiempoSesion">—</b></div>
+                        <div class="stat"><span>Tasa de interacción</span><b class="txt-green" id="statTasa">—</b><small id="statTasaSub"></small></div>
+                    </div>
+                    <div class="line-chart" id="chartTiempo"></div>
+                </div>
+
+                <!-- DASHBOARDS + PAÍSES ──────────────────────────────── -->
+                <div class="two-col">
+                    <div class="content-panel">
+                        <h2>Sesiones por dashboard</h2>
+                        <p class="caption">Dashboards con más sesiones según el título de página en Analytics</p>
+                        <div id="rankDashboards"></div>
+                    </div>
+                    <div class="content-panel">
+                        <h2>Usuarios activos por país</h2>
+                        <p class="caption">Proporción de usuarios según la ubicación de su visita</p>
+                        <div id="donaPaises"></div>
+                    </div>
+                </div>
+
+                <!-- ACTIVIDAD ────────────────────────────────────────── -->
+                <div class="content-panel">
+                    <div class="panel-head">
+                        <div>
+                            <h2>Actividad de los usuarios a lo largo del tiempo</h2>
+                            <p class="caption">Sesiones y usuarios activos por día, según la fecha de última actividad de cada dashboard</p>
+                        </div>
+                        <div class="summary" id="resumenActividad"></div>
+                    </div>
+                    <div class="line-chart" id="chartActividad"></div>
+                </div>
+
+                <!-- USO + EMPRESAS ───────────────────────────────────── -->
+                <div class="two-col even">
+                    <div class="content-panel">
+                        <h2>Sesiones por área</h2>
+                        <p class="caption">Participación de cada tipo de dashboard en las sesiones</p>
+                        <div id="donaAreas"></div>
+                    </div>
+                    <div class="content-panel">
+                        <h2>Empresas con más sesiones</h2>
+                        <p class="caption">Actividad acumulada de todos los dashboards de cada empresa</p>
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Empresa</th>
+                                        <th class="num">Dashboards</th>
+                                        <th class="num">Sesiones</th>
+                                        <th class="num">Vistas</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaEmpresas"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="footnote">
+                Tráfico web · Google Analytics vía Apps Script &nbsp;·&nbsp; Última sincronización: <code id="footerTime">—</code>
+            </div>
+        </main>
     </div>
-    <script src="/js/sidebar.js"></script>
-    <script src="/js/control.js"></script>
+</div>
+
+<script src="../js/sidebar.js"></script>
+<script src="../js/control.js"></script>
+<script src="../js/general.js"></script>
 </body>
 </html>

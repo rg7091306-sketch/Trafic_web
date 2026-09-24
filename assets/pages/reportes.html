@@ -3,161 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reportes</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <title>Reportes · Tráfico web · RED Intelfon</title>
+    <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <div class="dashboard-shell">
-        <div id="sidebar-container"></div>
+<div class="app">
+    <div id="sidebar-container"></div>
 
-        <div class="dashboard-content">
-            <header class="header reportes-header-page">
-                <div class="header-texto">
-                    <h1>Reportes</h1>
-                    <p>Consulta y seguimiento de reportes de tráfico</p>
+    <div class="main">
+        <header class="topbar">
+            <button class="mobile-toggle" type="button" data-sidebar-toggle aria-label="Mostrar u ocultar menú">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <div class="topbar-title">Tráfico web <small>Reportes</small></div>
+            <div class="topbar-right">
+                <div class="date-pill"><span class="dot-live pulse"></span><span>Actualizado: <span id="currentDate">--</span></span></div>
+            </div>
+        </header>
+
+        <main class="content">
+
+            <!-- ENCABEZADO ───────────────────────────────────────────── -->
+            <div class="page-header">
+                <div>
+                    <div class="page-eyebrow">Tráfico web · Detalle por dashboard</div>
+                    <h1 class="page-title">Reportes</h1>
+                    <p class="page-sub" id="pageSync">Cargando datos…</p>
                 </div>
-            </header>
-
-            <main class="contenedor">
-                <section class="reportes-panel">
-                    <div class="reportes-header">
-                        <div class="reportes-selector reportes-selector-multiple">
-                            <button type="button" id="reportesEmpresaTrigger" class="reportes-multiple-trigger" aria-expanded="false" aria-controls="reportesEmpresaOpciones">
-                                <span id="reportesEmpresaResumen"><b>Empresas</b></span>
-                                <span class="reportes-multiple-chevron">⌄</span>
-                            </button>
-                            <div id="reportesEmpresaOpciones" class="reportes-multiple-menu" hidden></div>
-                        </div>
-
-                        <div class="reportes-selector reportes-selector-area reportes-selector-custom">
-                            <button type="button" id="reportesAreaTrigger" class="reportes-multiple-trigger" aria-expanded="false" aria-controls="reportesAreaOpciones">
-                                <span id="reportesAreaResumen"><b>Áreas</b></span>
-                                <span class="reportes-multiple-chevron">⌄</span>
-                            </button>
-                            <div id="reportesAreaOpciones" class="reportes-multiple-menu" hidden></div>
-                        </div>
-
-                        <div class="reportes-periodo" aria-label="Filtro de periodo">
-                            <div class="reportes-periodo-controles">
-                                <label for="reportesDesde"></label>
-                                <div class="reportes-fecha">
-                                    <button type="button" id="reportesDesdeTrigger" class="reportes-fecha-trigger" aria-expanded="false" aria-controls="reportesDesdeCalendario">
-                                        <span id="reportesDesdeTexto" data-placeholder="Desde">Desde</span><span class="reportes-icono"><img class="reportes-icono-normal" src="../img/calendario.png" alt="Abrir calendario"><img class="reportes-icono-hover" src="../img/calendario2.png" alt=""></span>
-                                    </button>
-                                    <input type="hidden" id="reportesDesde">
-                                    <div id="reportesDesdeCalendario" class="reportes-calendario" hidden></div>
-                                </div>
-                                <label for="reportesHasta"></label>
-                                <div class="reportes-fecha">
-                                    <button type="button" id="reportesHastaTrigger" class="reportes-fecha-trigger" aria-expanded="false" aria-controls="reportesHastaCalendario">
-                                        <span id="reportesHastaTexto" data-placeholder="Hasta">Hasta</span><span class="reportes-icono"><img class="reportes-icono-normal" src="../img/calendario.png" alt="Abrir calendario"><img class="reportes-icono-hover" src="../img/calendario2.png" alt=""></span>
-                                    </button>
-                                    <input type="hidden" id="reportesHasta">
-                                    <div id="reportesHastaCalendario" class="reportes-calendario" hidden></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="reportes-buscador reportes-selector-custom">
-                            <button type="button" id="reportesColumnaTrigger" class="reportes-multiple-trigger" aria-expanded="false" aria-controls="reportesColumnaOpciones">
-                                <span id="reportesColumnaResumen"><b>Características</b></span>
-                                <span class="reportes-multiple-chevron">⌄</span>
-                            </button>
-                            <div id="reportesColumnaOpciones" class="reportes-multiple-menu" hidden>
-                                <button type="button" class="reportes-opcion-simple" data-value="">Todas las columnas</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="ID">ID</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="EMPRESA">Empresa</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="CLAVE_ANALYTICS">Clave Analytics</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="TITULO_ANALYTICS">Título Analytics</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="TIPO_DASHBOARD">Tipo Dashboard</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="ACTIVO">Activo</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="USUARIOS_ACTIVOS">Usuarios Activos</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="SESIONES">Sesiones</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="VISTAS">Vistas</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="TIEMPO_INTERACCION_MEDIO_POR_SESION">Tiempo Interacción Medio</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="SESIONES_CON_INTERACCION">Sesiones con Interacción</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="PORCENTAJE_INTERACCIONES">% Interacciones</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="USUARIOS_RECURRENTES">Usuarios Recurrentes</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="TOTAL_USUARIOS">Total Usuarios</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="TOTAL_EVENTOS">Total Eventos</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="PRIMER_ACCESO">Primer Acceso</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="ULTIMO_ACCESO">Último Acceso</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="ULTIMA_ACTIVIDAD">Última Actividad</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="NAVEGADORES">Navegadores</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="SISTEMAS_OPERATIVOS">Sistemas Operativos</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="CATEGORIAS_DISPOSITIVO">Dispositivos</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="PLATAFORMAS">Plataformas</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="CIUDADES">Ciudades</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="PAISES">Países</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="REGIONES">Regiones</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="FUENTES_SESION">Fuentes Sesión</button>
-                                <button type="button" class="reportes-opcion-simple" data-value="URL_PAGINAS">URL Páginas</button>
-                            </div>
-                        </div>
-
-                        <button type="button" id="reportesLimpiarFiltros" class="reportes-limpiar-filtros" title="Limpiar filtros">
-                            <span aria-hidden="true" class="reportes-icono"><img class="reportes-icono-normal" src="../img/quitar.png" alt=""><img class="reportes-icono-hover" src="../img/quitar2.png" alt=""></span>
-                        </button>
+                <div class="header-actions">
+                    <div class="hero-pills">
+                        <span><b id="heroDashboards">—</b> dashboards</span>
+                        <span><b id="heroEmpresas">—</b> empresas</span>
+                        <span><b id="heroAreas">—</b> áreas</span>
                     </div>
+                    <button class="filter-chip" id="btnRefresh" type="button">↻ Actualizar datos</button>
+                </div>
+            </div>
 
-                </section>
+            <div id="errorAnalytics" class="error-box" hidden></div>
+            <div id="globalLoader" class="loader"><div class="spinner"></div></div>
 
-                <div id="graficaSesiones" class="line-chart reportes-grafica" aria-label="Gráfica de sesiones por actividad"></div>
+            <div id="mainContent" hidden>
 
-                <section class="card-tabla reportes-tabla">
-                    <div class="card-tabla-header">
+                <!-- FILTROS ──────────────────────────────────────────── -->
+                <div class="filter-bar" id="filtrosReportes">
+                    <div class="filter-group">
+                        <span class="filter-label">Empresa</span>
+                        <div class="drop">
+                            <button class="drop-trigger" id="repEmpresaTrigger" type="button" aria-expanded="false">
+                                <span id="repEmpresaLabel">Todas las empresas</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                            <div class="drop-panel" id="repEmpresaPanel" hidden>
+                                <input class="drop-search" id="repEmpresaBuscar" placeholder="Buscar empresa…" autocomplete="off">
+                                <div class="drop-list" id="repEmpresaLista"></div>
+                                <div class="drop-meta" id="repEmpresaMeta"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <span class="filter-label">Área</span>
+                        <div class="drop">
+                            <button class="drop-trigger" id="repAreaTrigger" type="button" aria-expanded="false">
+                                <span id="repAreaLabel">Todas las áreas</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                            <div class="drop-panel" id="repAreaPanel" hidden>
+                                <div class="drop-list" id="repAreaLista"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <span class="filter-label">Actividad</span>
+                        <div class="drop">
+                            <button class="drop-trigger small" id="repDesdeTrigger" type="button" aria-expanded="false">
+                                <span id="repDesdeLabel">Desde</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            </button>
+                            <div class="drop-panel calendar" id="repDesdePanel" hidden></div>
+                        </div>
+                        <div class="drop">
+                            <button class="drop-trigger small" id="repHastaTrigger" type="button" aria-expanded="false">
+                                <span id="repHastaLabel">Hasta</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            </button>
+                            <div class="drop-panel calendar" id="repHastaPanel" hidden></div>
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <button class="filter-chip ghost" id="repLimpiar" type="button">✕ Limpiar filtros</button>
+                    </div>
+                </div>
+
+                <!-- KPIs ─────────────────────────────────────────────── -->
+                <div class="kpi-grid">
+                    <div class="kpi"><div class="kpi-label">Dashboards</div><div class="kpi-value" id="repKpiDashboards">—</div><div class="kpi-sub" id="repKpiDashboardsSub">—</div></div>
+                    <div class="kpi"><div class="kpi-label">Empresas</div><div class="kpi-value" id="repKpiEmpresas">—</div><div class="kpi-sub">En la selección</div></div>
+                    <div class="kpi"><div class="kpi-label">Sesiones</div><div class="kpi-value" id="repKpiSesiones">—</div><div class="kpi-sub" id="repKpiSesionesSub">—</div></div>
+                    <div class="kpi"><div class="kpi-label">Vistas</div><div class="kpi-value" id="repKpiVistas">—</div><div class="kpi-sub" id="repKpiVistasSub">—</div></div>
+                    <div class="kpi"><div class="kpi-label">Eventos</div><div class="kpi-value" id="repKpiEventos">—</div><div class="kpi-sub">Total registrado</div></div>
+                </div>
+
+                <!-- SESIONES POR EMPRESA ─────────────────────────────── -->
+                <div class="content-panel">
+                    <h2>Sesiones por empresa</h2>
+                    <p class="caption" id="repDonaCaption">Distribución de sesiones entre las empresas seleccionadas</p>
+                    <div id="repDona"></div>
+                </div>
+
+                <!-- TABLA ────────────────────────────────────────────── -->
+                <div class="content-panel">
+                    <div class="toolbar">
                         <div>
                             <h2>Detalle de información</h2>
-                            <div class="contador">Datos de la empresa seleccionada</div>
+                            <p class="caption" id="repContador" style="margin:0">—</p>
                         </div>
-                        <div class="contador" id="contadorReportes">-</div>
+                        <div class="toolbar-actions">
+                            <input class="search-input" id="repBuscar" type="search" placeholder="Buscar en la tabla…" autocomplete="off">
+                            <select class="select" id="repColumna" aria-label="Columna a mostrar"></select>
+                            <button class="filter-chip ghost" id="repExportar" type="button">⬇ Descargar CSV</button>
+                        </div>
                     </div>
-
-                    <div class="tabla-wrapper">
-                        <table id="tablaReportes">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Empresa</th>
-                                    <th>Clave Analytics</th>
-                                    <th>Título Analytics</th>
-                                    <th>Tipo Dashboard</th>
-                                    <th>Activo</th>
-                                    <th>Usuarios Activos</th>
-                                    <th>Sesiones</th>
-                                    <th>Vistas</th>
-                                    <th>Tiempo Interacción Medio</th>
-                                    <th>Sesiones con Interacción</th>
-                                    <th>% Interacciones</th>
-                                    <th>Usuarios Recurrentes</th>
-                                    <th>Total Usuarios</th>
-                                    <th>Total Eventos</th>
-                                    <th>Primer Acceso</th>
-                                    <th>Último Acceso</th>
-                                    <th>Última Actividad</th>
-                                    <th>Navegadores</th>
-                                    <th>Sistemas Operativos</th>
-                                    <th>Dispositivos</th>
-                                    <th>Plataformas</th>
-                                    <th>Ciudades</th>
-                                    <th>Países</th>
-                                    <th>Regiones</th>
-                                    <th>Fuentes Sesión</th>
-                                    <th>URL</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tablaReportesBody"></tbody>
+                    <div class="table-wrap tall table-wide" id="repTablaWrap">
+                        <table>
+                            <thead><tr id="repTablaHead"></tr></thead>
+                            <tbody id="repTablaBody"></tbody>
                         </table>
                     </div>
-                    <div id="paginacionReportes" class="paginacion-reportes"></div>
-                </section>
-            </main>
+                    <div class="pagination" id="repPaginacion"></div>
+                </div>
 
-        </div>
+            </div>
+
+            <div class="footnote">
+                Tráfico web · Google Analytics vía Apps Script &nbsp;·&nbsp; Última sincronización: <code id="footerTime">—</code>
+            </div>
+        </main>
     </div>
+</div>
 
-    <script src="/js/sidebar.js"></script>
-    <script src="/js/reportes.js"></script>
-    <script src="/js/control.js"></script>
+<script src="../js/sidebar.js"></script>
+<script src="../js/control.js"></script>
+<script src="../js/reportes.js"></script>
 </body>
 </html>
