@@ -23,30 +23,64 @@ function cambiarPestanaEstadisticas(pestana) {
     }
 }
 
+// Dona o ranking con un desglose exacto; si no existe, aviso de no disponible.
+// total = usuarios (o sesiones) únicos. Si las filas suman más, es porque Analytics
+// cuenta a un usuario en más de una fila (ej. visitas desde dos ciudades);
+// entonces se muestran barras con % sobre el total y una nota, como en Analytics.
+function mostrarDesglose(id, items, tipo, opciones, total = null) {
+    if (!items) {
+        noDisponible(id);
+        return;
+    }
+
+    const suma = items.reduce((acumulado, item) => acumulado + item.valor, 0);
+    const seRepite = Number.isFinite(total) && total > 0 && suma > total;
+
+    if (tipo === "dona" && !seRepite) {
+        renderDona(id, items, opciones);
+        return;
+    }
+
+    renderRanking(id, items, { ...opciones, total: Number.isFinite(total) && total > 0 ? total : opciones.total });
+
+    if (seRepite) {
+        document.getElementById(id)?.insertAdjacentHTML("beforeend",
+            `<p class="rank-note">Un usuario puede aparecer en más de una fila si Analytics lo registró con valores distintos (por ejemplo, visitas desde dos ciudades). Usuarios únicos en total: <b>${fmt(total)}</b>.</p>`);
+    }
+}
+
 function renderizarAudiencia({ filas, metricas, filtrado }) {
-    const paises = agregarLista(filas, "PAISES");
-    const ciudades = agregarLista(filas, "CIUDADES");
-    const totalPaises = paises.reduce((suma, item) => suma + item.valor, 0);
+    const paises = desglose("paises", filas, "PAISES", filtrado);
+    const ciudades = desglose("ciudades", filas, "CIUDADES", filtrado);
+    const regiones = desglose("regiones", filas, "REGIONES", filtrado);
+    const total = metricas.totalUsuarios;
 
-    colocarTexto("audUsuarios", fmt(metricas.usuarios));
-    colocarTexto("audUsuariosSub", filtrado ? "Suma por dashboard (aprox.)" : "Usuarios únicos");
-    colocarTexto("audNuevos", fmt(metricas.nuevos));
-    colocarTexto("audRecurrentes", fmt(metricas.recurrentes));
-    colocarTexto("audRecurrentesSub", metricas.nuevos + metricas.recurrentes
-        ? `${fmtPct(metricas.recurrentes / (metricas.nuevos + metricas.recurrentes), 0)} regresaron`
+    colocarTexto("audUsuarios", dato(metricas.usuarios));
+    colocarTexto("audUsuariosSub", metricas.usuarios !== null ? "Usuarios únicos" : "No disponible con este filtro");
+    colocarTexto("audNuevos", dato(metricas.nuevos));
+    colocarTexto("audRecurrentes", dato(metricas.recurrentes));
+    colocarTexto("audRecurrentesSub", metricas.recurrentes !== null && total
+        ? `${fmtPct(metricas.recurrentes / total, 0)} de los usuarios regresaron`
         : "Regresaron");
-    colocarTexto("audPaises", fmt(paises.length));
-    colocarTexto("audPaisesSub", paises[0] ? `Principal: ${paises[0].nombre}` : "—");
-    colocarTexto("audCiudades", fmt(ciudades.length));
-    colocarTexto("audCiudadesSub", ciudades[0] ? `Principal: ${ciudades[0].nombre}` : "—");
+    // "Sin identificar" no se cuenta como país ni ciudad
+    const identificados = lista => lista?.filter(item => item.nombre !== "Sin identificar") ?? null;
+    const paisesReales = identificados(paises);
+    const ciudadesReales = identificados(ciudades);
 
-    renderRanking("rankPaises", paises, { columnas: ["País", "Usuarios activos"], total: totalPaises });
-    renderDona("donaRecurrencia", [
-        { nombre: "Recurrentes", valor: metricas.recurrentes },
-        { nombre: "Nuevos", valor: metricas.nuevos }
-    ], { etiqueta: "Usuarios", colores: [COLORES[4], COLORES[1]] });
-    renderRanking("rankCiudades", ciudades, { columnas: ["Ciudad", "Usuarios activos"] });
-    renderRanking("rankRegiones", agregarLista(filas, "REGIONES"), { columnas: ["Región", "Usuarios activos"] });
+    colocarTexto("audPaises", paisesReales ? fmt(paisesReales.length) : NO_DISPONIBLE);
+    colocarTexto("audPaisesSub", paisesReales?.[0] ? `Principal: ${paisesReales[0].nombre}` : "—");
+    colocarTexto("audCiudades", ciudadesReales ? fmt(ciudadesReales.length) : NO_DISPONIBLE);
+    colocarTexto("audCiudadesSub", ciudadesReales?.[0] ? `Principal: ${ciudadesReales[0].nombre}` : "—");
+
+    mostrarDesglose("donaPaisesAudiencia", paises, "dona", { etiqueta: "Usuarios", columnas: ["País", "Usuarios activos"] }, metricas.usuarios);
+    // No es dona: un usuario nuevo que regresó cuenta en las dos filas, igual que en Analytics
+    mostrarDesglose("donaRecurrencia", metricas.nuevos !== null && metricas.recurrentes !== null && total
+        ? [{ nombre: "Nuevos en el periodo", valor: metricas.nuevos }, { nombre: "Regresaron (recurrentes)", valor: metricas.recurrentes }]
+        : null, "ranking", { columnas: ["Tipo de usuario", "Usuarios"], total });
+    mostrarDesglose("rankCiudades", ciudades, "ranking", { columnas: ["Ciudad", "Usuarios activos"] }, metricas.usuarios);
+    mostrarDesglose("rankRegiones", regiones, "ranking", { columnas: ["Región", "Usuarios activos"] }, metricas.usuarios);
+
+    // Usuarios de cada título de página: dato exacto de Analytics por fila
     renderRanking(
         "rankUsuariosDashboard",
         filas.map(fila => ({ nombre: fila._titulo, valor: fila._usuarios })).sort((a, b) => b.valor - a.valor),
@@ -54,38 +88,44 @@ function renderizarAudiencia({ filas, metricas, filtrado }) {
     );
 }
 
-function renderizarTecnologia({ filas, metricas }) {
-    renderRanking("rankSistemas", agregarLista(filas, "SISTEMAS_OPERATIVOS"), { columnas: ["Sistema operativo", "Usuarios activos"] });
-    renderDona("donaDispositivos", agregarLista(filas, "CATEGORIAS_DISPOSITIVO"), {
-        etiqueta: "Usuarios",
-        centro: fmt(metricas.usuarios),
-        mostrarValor: false
-    });
-    renderRanking("rankNavegadores", agregarLista(filas, "NAVEGADORES"), { columnas: ["Navegador", "Usuarios activos"] });
-    renderRanking("rankFuentes", agregarLista(filas, "FUENTES_SESION"), { columnas: ["Fuente", "Sesiones"] });
+function renderizarTecnologia({ filas, metricas, filtrado }) {
+    mostrarDesglose("donaSistemas", desglose("sistemas", filas, "SISTEMAS_OPERATIVOS", filtrado), "dona",
+        { etiqueta: "Usuarios", columnas: ["Sistema operativo", "Usuarios activos"] }, metricas.usuarios);
+    mostrarDesglose("donaDispositivos", desglose("dispositivos", filas, "CATEGORIAS_DISPOSITIVO", filtrado), "dona",
+        { etiqueta: "Usuarios", columnas: ["Dispositivo", "Usuarios activos"] }, metricas.usuarios);
+    mostrarDesglose("rankNavegadores", desglose("navegadores", filas, "NAVEGADORES", filtrado), "ranking",
+        { columnas: ["Navegador", "Usuarios activos"] }, metricas.usuarios);
+    mostrarDesglose("rankFuentes", desglose("fuentes", filas, "FUENTES_SESION", filtrado), "ranking",
+        { columnas: ["Fuente", "Sesiones"] }, metricas.sesiones);
 }
 
-function renderizarInteraccion({ filas, metricas }) {
+function renderizarInteraccion({ filas, metricas, filtrado }) {
     colocarTexto("intEventos", fmt(metricas.eventos));
-    colocarTexto("intEventosSub", `${fmt(metricas.eventosPorSesion, 1)} por sesión`);
+    colocarTexto("intEventosSub", metricas.eventosPorSesion !== null ? `${fmt(metricas.eventosPorSesion, 1)} por sesión` : "Total registrado");
     colocarTexto("intVistas", fmt(metricas.vistas));
-    colocarTexto("intVistasSub", `${fmt(metricas.vistasPorSesion, 1)} por sesión`);
-    colocarTexto("intTasa", fmtPct(metricas.tasaInteraccion));
-    colocarTexto("intTasaSub", `≈ ${fmt(metricas.sesionesInteraccion)} sesiones con interacción`);
-    colocarTexto("intTiempo", fmtDuracion(metricas.tiempoPorSesion));
-    colocarTexto("intTiempoSub", `${fmtDuracion(metricas.tiempoPorUsuario)} por usuario activo`);
+    colocarTexto("intVistasSub", metricas.vistasPorSesion !== null ? `${fmt(metricas.vistasPorSesion, 1)} por sesión` : "Páginas vistas");
+    colocarTexto("intTasa", dato(metricas.tasaInteraccion, fmtPct));
+    colocarTexto("intTasaSub", metricas.sesionesInteraccion !== null
+        ? `${fmt(metricas.sesionesInteraccion)} de ${fmt(metricas.sesiones)} sesiones`
+        : "No disponible con este filtro");
+    colocarTexto("intTiempo", dato(metricas.tiempoPorSesion, fmtDuracion));
+    colocarTexto("intTiempoSub", metricas.tiempoPorUsuario !== null
+        ? `${fmtDuracion(metricas.tiempoPorUsuario)} por usuario activo`
+        : "No disponible con este filtro");
 
-    const dias = serieDiaria(filas, "_ultimaActividad", {
-        eventos: fila => fila._eventos,
-        vistas: fila => fila._vistas
-    });
+    const dias = serieDiariaExacta(filtrado);
 
-    renderLinea("chartEventos", [
-        { nombre: "Eventos", color: COLORES[3], puntos: dias.map(dia => ({ fecha: dia.fecha, valor: dia.eventos })) },
-        { nombre: "Vistas", color: COLORES[2], puntos: dias.map(dia => ({ fecha: dia.fecha, valor: dia.vistas })) }
-    ]);
+    if (dias) {
+        renderLinea("chartEventos", [
+            { nombre: "Eventos", color: COLORES[3], puntos: dias.map(dia => ({ fecha: dia.fecha, valor: dia.eventos })) },
+            { nombre: "Vistas", color: COLORES[2], puntos: dias.map(dia => ({ fecha: dia.fecha, valor: dia.vistas })) }
+        ]);
+    } else {
+        noDisponible("chartEventos", MENSAJE_SOLO_SIN_FILTRO);
+    }
 
-    renderColumnas("columnasEventos", agregarLista(filas, "EVENTOS"));
+    // Los eventos se pueden sumar entre dashboards; sin filtro se usan los de Analytics
+    renderColumnas("columnasEventos", desgloseExacto("eventos", filtrado) || agregarLista(filas, "EVENTOS"));
 
     renderRanking(
         "rankTiempo",

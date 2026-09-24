@@ -1,35 +1,46 @@
 // =====================================================
 // CONTROL GENERAL — KPIs, interacción, dashboards, países,
-// actividad en el tiempo, uso de dashboards y empresas.
+// actividad en el tiempo, sesiones por área y empresas.
+// Solo se muestran datos exactos de Analytics; lo que no se puede
+// calcular con el filtro actual aparece como "—".
 // =====================================================
 
-function renderizarKpisGenerales(metricas, filtrado) {
-    colocarTexto("kpiUsuarios", fmt(metricas.usuarios));
-    colocarTexto("kpiUsuariosSub", filtrado
-        ? "Suma por dashboard (aprox.)"
-        : `${fmt(metricas.nuevos)} nuevos · ${fmt(metricas.recurrentes)} recurrentes`);
-    colocarTexto("kpiSesiones", fmt(metricas.sesiones));
-    colocarTexto("kpiSesionesSub", `${fmtPct(metricas.tasaInteraccion, 0)} con interacción`);
+function renderizarKpisGenerales(metricas) {
+    colocarTexto("kpiUsuarios", dato(metricas.usuarios));
+    colocarTexto("kpiUsuariosSub", metricas.nuevos !== null
+        ? `${fmt(metricas.nuevos)} nuevos en el periodo`
+        : "Usuarios únicos");
+    colocarTexto("kpiSesiones", dato(metricas.sesiones));
+    colocarTexto("kpiSesionesSub", metricas.tasaInteraccion !== null
+        ? `${fmtPct(metricas.tasaInteraccion, 0)} con interacción`
+        : "No disponible con este filtro");
     colocarTexto("kpiVistas", fmt(metricas.vistas));
-    colocarTexto("kpiVistasSesion", fmt(metricas.vistasPorSesion, 1));
+    colocarTexto("kpiVistasSesion", dato(metricas.vistasPorSesion, valor => fmt(valor, 1)));
     colocarTexto("kpiEventos", fmt(metricas.eventos));
-    colocarTexto("kpiEventosSub", `${fmt(metricas.eventosPorSesion, 1)} por sesión`);
-    colocarTexto("kpiRecurrentes", fmt(metricas.recurrentes));
-    colocarTexto("kpiRecurrentesSub", metricas.totalUsuarios
+    colocarTexto("kpiEventosSub", metricas.eventosPorSesion !== null
+        ? `${fmt(metricas.eventosPorSesion, 1)} por sesión`
+        : "Total registrado");
+    colocarTexto("kpiRecurrentes", dato(metricas.recurrentes));
+    colocarTexto("kpiRecurrentesSub", metricas.recurrentes !== null && metricas.totalUsuarios
         ? `${fmtPct(metricas.recurrentes / metricas.totalUsuarios, 0)} regresaron`
-        : "Sin usuarios");
+        : "No disponible con este filtro");
 
-    colocarTexto("statTiempoUsuario", fmtDuracion(metricas.tiempoPorUsuario));
-    colocarTexto("statSesionesUsuario", fmt(metricas.sesionesInteraccionPorUsuario, 1));
-    colocarTexto("statTiempoSesion", fmtDuracion(metricas.tiempoPorSesion));
-    colocarTexto("statTasa", fmtPct(metricas.tasaInteraccion));
-    colocarTexto("statTasaSub", "Sesiones con interacción sobre el total");
+    colocarTexto("statTiempoUsuario", dato(metricas.tiempoPorUsuario, fmtDuracion));
+    colocarTexto("statSesionesUsuario", dato(metricas.sesionesInteraccionPorUsuario, valor => fmt(valor, 1)));
+    colocarTexto("statTiempoSesion", dato(metricas.tiempoPorSesion, fmtDuracion));
+    colocarTexto("statTasa", dato(metricas.tasaInteraccion, fmtPct));
+    colocarTexto("statTasaSub", metricas.sesionesInteraccion !== null
+        ? `${fmt(metricas.sesionesInteraccion)} de ${fmt(metricas.sesiones)} sesiones`
+        : "No disponible con este filtro");
 }
 
-function renderizarTiempoPorDia(filas) {
-    const dias = serieDiaria(filas, "_ultimaActividad", {
-        segundos: fila => fila._segundosSesion * fila._sesiones
-    });
+function renderizarTiempoPorDia(filtrado) {
+    const dias = serieDiariaExacta(filtrado);
+
+    if (!dias) {
+        noDisponible("chartTiempo", MENSAJE_SOLO_SIN_FILTRO);
+        return;
+    }
 
     renderLinea("chartTiempo", [{
         nombre: "Tiempo de interacción",
@@ -38,18 +49,20 @@ function renderizarTiempoPorDia(filas) {
     }], { formato: fmtDuracion, unidadEje: 60 });
 }
 
-function renderizarActividad(filas) {
-    const dias = serieDiaria(filas, "_ultimaActividad", {
-        sesiones: fila => fila._sesiones,
-        usuarios: fila => fila._usuarios
-    });
+function renderizarActividad(filtrado) {
+    const dias = serieDiariaExacta(filtrado);
+    const resumen = document.getElementById("resumenActividad");
+
+    if (!dias) {
+        noDisponible("chartActividad", MENSAJE_SOLO_SIN_FILTRO);
+        if (resumen) resumen.innerHTML = "";
+        return;
+    }
 
     renderLinea("chartActividad", [
         { nombre: "Sesiones", color: COLORES[0], puntos: dias.map(dia => ({ fecha: dia.fecha, valor: dia.sesiones })) },
         { nombre: "Usuarios activos", color: COLORES[1], puntos: dias.map(dia => ({ fecha: dia.fecha, valor: dia.usuarios })) }
     ], { totales: false });
-
-    const resumen = document.getElementById("resumenActividad");
 
     if (!resumen) {
         return;
@@ -70,24 +83,27 @@ function renderizarTablaEmpresas(filas) {
         return;
     }
 
+    const sesionesPorEmpresa = new Map(
+        totalesPorGrupo(filas, "_empresa", "sesiones").items.map(item => [item.nombre, item.valor])
+    );
     const empresas = valoresUnicos(filas, "_empresa")
         .map(empresa => {
             const propias = filas.filter(fila => fila._empresa === empresa);
             return {
                 empresa,
                 dashboards: propias.length,
-                sesiones: sumar(propias, "_sesiones"),
+                sesiones: sesionesPorEmpresa.get(empresa) ?? null,
                 vistas: sumar(propias, "_vistas")
             };
         })
-        .sort((a, b) => b.sesiones - a.sesiones || b.vistas - a.vistas);
+        .sort((a, b) => (b.sesiones ?? -1) - (a.sesiones ?? -1) || b.vistas - a.vistas);
 
     cuerpo.innerHTML = empresas.length
         ? empresas.map(item => `
             <tr>
                 <td><div class="cell-main">${escaparHTML(item.empresa)}</div></td>
                 <td class="num">${fmt(item.dashboards)}</td>
-                <td class="num">${fmt(item.sesiones)}</td>
+                <td class="num">${dato(item.sesiones)}</td>
                 <td class="num">${fmt(item.vistas)}</td>
             </tr>`).join("")
         : '<tr><td colspan="4" class="empty-cell">Sin empresas para el filtro seleccionado.</td></tr>';
@@ -96,28 +112,40 @@ function renderizarTablaEmpresas(filas) {
 document.addEventListener("analytics:actualizado", ({ detail }) => {
     const { filas, metricas, filtrado } = detail;
 
-    renderizarKpisGenerales(metricas, filtrado);
-    renderizarTiempoPorDia(filas);
+    renderizarKpisGenerales(metricas);
+    renderizarTiempoPorDia(filtrado);
 
+    // Sesiones de cada título de página: dato exacto de Analytics por fila
     renderRanking(
         "rankDashboards",
         filas.map(fila => ({ nombre: fila._titulo, valor: fila._sesiones })).sort((a, b) => b.valor - a.valor),
         { columnas: ["Título de página", "Sesiones"], limite: 8 }
     );
 
-    renderDona("donaPaises", agregarLista(filas, "PAISES"), {
-        etiqueta: "Usuarios",
-        centro: fmt(metricas.usuarios),
-        mostrarValor: false
-    });
+    const paises = desglose("paises", filas, "PAISES", filtrado);
+    if (paises) {
+        renderDona("donaPaises", paises, {
+            etiqueta: "Usuarios",
+            centro: dato(metricas.usuarios),
+            mostrarValor: false
+        });
+    } else {
+        noDisponible("donaPaises");
+    }
 
-    renderizarActividad(filas);
+    renderizarActividad(filtrado);
 
-    renderDona("donaAreas", agruparPor(filas, "_area", "_sesiones"), {
-        etiqueta: "Áreas",
-        centro: fmt(valoresUnicos(filas, "_area").length),
-        mostrarValor: false
-    });
+    // Barras y no dona: una sesión puede pasar por dashboards de varias áreas,
+    // así que el porcentaje se calcula sobre el total real de sesiones.
+    const porArea = totalesPorGrupo(filas, "_area", "sesiones");
+    if (porArea.exacto) {
+        renderRanking("donaAreas", porArea.items, {
+            columnas: ["Área", "Sesiones"],
+            total: metricas.sesiones
+        });
+    } else {
+        noDisponible("donaAreas");
+    }
 
     renderizarTablaEmpresas(filas);
 });

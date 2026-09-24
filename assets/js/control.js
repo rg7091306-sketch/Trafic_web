@@ -14,12 +14,12 @@ const TIEMPO_ACTUALIZACION = 300000;
 // Paleta de las gráficas: azules del diseño original + rojo de la marca
 const COLORES = ["#0e76c0", "#d62828", "#34a9ed", "#053161", "#2a9d8f", "#f4a261", "#8e5ea2", "#9de3f9"];
 
-const CLAVE_FILTROS = "trafico-web-filtros";
-
 const Analytics = {
     todas: [],
     filas: [],
     resumen: null,
+    desgloses: null,
+    grupos: null,
     actualizado: null,
     filtros: { area: "", empresa: "" }
 };
@@ -267,39 +267,92 @@ function valoresUnicos(filas, campo) {
         .sort((a, b) => a.localeCompare(b, "es", { sensitivity: "base" }));
 }
 
-// Sin filtros se usan los totales del resumen de la API, que no repiten
-// usuarios que abrieron varios dashboards (coinciden con Analytics).
-function calcularMetricas(filas, usarResumen) {
-    const sesionesFilas = sumar(filas, "_sesiones");
-    const segundosTotales = filas.reduce((total, fila) => total + fila._segundosSesion * fila._sesiones, 0);
-    const sesionesInteraccion = sumar(filas, "_sesionesInteraccion");
-    const recurrentes = sumar(filas, "_recurrentes");
-    const resumen = usarResumen ? Analytics.resumen : null;
+// Totales exactos (sin usuarios ni sesiones repetidos) para un conjunto de filas:
+// - todos los dashboards → resumen de Analytics
+// - un solo dashboard → su propia fila
+// - todos los dashboards de una empresa o de un área → totales del grupo
+// Si el conjunto no es ninguno de esos (ej. varias empresas), devuelve null.
+function totalesExactos(filas) {
+    if (!filas.length) {
+        return null;
+    }
 
-    // Con filtro, la suma por fila nunca puede superar el total real de la API.
-    const tope = (valor, maximo) => (Number.isFinite(maximo) ? Math.min(valor, maximo) : valor);
-    const general = Analytics.resumen || {};
+    const resumen = Analytics.resumen;
 
-    const usuarios = resumen?.usuariosActivos ?? tope(sumar(filas, "_usuarios"), general.usuariosActivos);
-    const totalUsuarios = resumen?.usuariosTotales ?? tope(sumar(filas, "_totalUsuarios"), general.usuariosTotales);
-    const sesiones = resumen?.sesiones ?? tope(sesionesFilas, general.sesiones);
-    const vistas = resumen?.vistas ?? sumar(filas, "_vistas");
-    const eventos = resumen?.eventos ?? sumar(filas, "_eventos");
+    if (resumen && filas.length === Analytics.todas.length) {
+        return {
+            usuarios: resumen.usuariosActivos,
+            totalUsuarios: resumen.usuariosTotales,
+            sesiones: resumen.sesiones,
+            sesionesConInteraccion: resumen.sesionesConInteraccion,
+            segundos: resumen.segundosInteraccion,
+            vistas: resumen.vistas,
+            eventos: resumen.eventos
+        };
+    }
 
-    // Una sesión recorre varios dashboards, así que la suma por fila (sesionesFilas)
-    // es mayor que las sesiones reales. La tasa se toma de las filas y se aplica
-    // a las sesiones reales; el tiempo total sí es aditivo.
-    const tasaInteraccion = sesionesFilas ? sesionesInteraccion / sesionesFilas : 0;
-    const sesionesInteraccionEstimadas = tasaInteraccion * sesiones;
+    for (const [campo, clave] of [["_empresa", "empresas"], ["_area", "areas"]]) {
+        const grupo = filas[0][campo];
+        const exacto = Analytics.grupos?.[clave]?.[grupo];
 
-    // Misma idea para nuevos / recurrentes: proporción de las filas sobre el total real.
-    const usuariosFilas = sumar(filas, "_totalUsuarios");
-    const recurrentesAjustados = usuariosFilas
-        ? Math.round(Math.min(recurrentes / usuariosFilas, 1) * totalUsuarios)
-        : 0;
+        if (exacto && filas.every(fila => fila[campo] === grupo)
+            && Analytics.todas.filter(fila => fila[campo] === grupo).length === filas.length) {
+            return { ...exacto, totalUsuarios: exacto.usuarios };
+        }
+    }
+
+    if (filas.length === 1) {
+        const fila = filas[0];
+        return {
+            usuarios: fila._usuarios,
+            totalUsuarios: fila._totalUsuarios,
+            sesiones: fila._sesiones,
+            sesionesConInteraccion: fila._sesionesInteraccion,
+            segundos: fila._segundosSesion * fila._sesiones,
+            recurrentes: fila._recurrentes
+        };
+    }
+
+    return null;
+}
+
+// Nuevos / recurrentes exactos de Analytics (solo para todos los dashboards)
+function recurrenciaExacta(filas) {
+    const lista = filas.length === Analytics.todas.length ? Analytics.desgloses?.recurrencia : null;
+
+    if (!Array.isArray(lista) || !lista.length) {
+        return null;
+    }
+
+    const valor = tipo => numeroSeguro(lista.find(item => normalizarTexto(item.nombre) === tipo)?.valor);
+    return { nuevos: valor("new"), recurrentes: valor("returning") };
+}
+
+function calcularMetricas(filas) {
+    const exactos = totalesExactos(filas);
+    const numero = valor => (Number.isFinite(valor) ? valor : null);
+    const dividir = (a, b) => (a === null || !b ? null : a / b);
+
+    // Vistas, eventos y tiempo de interacción sí se pueden sumar entre dashboards
+    const vistas = numero(exactos?.vistas) ?? sumar(filas, "_vistas");
+    const eventos = numero(exactos?.eventos) ?? sumar(filas, "_eventos");
+    const segundos = numero(exactos?.segundos)
+        ?? filas.reduce((total, fila) => total + fila._segundosSesion * fila._sesiones, 0);
+
+    // Usuarios y sesiones solo si hay total exacto (si no, "—")
+    const usuarios = numero(exactos?.usuarios);
+    const totalUsuarios = numero(exactos?.totalUsuarios);
+    const sesiones = numero(exactos?.sesiones);
+    const sesionesInteraccion = numero(exactos?.sesionesConInteraccion);
+
+    const recurrencia = recurrenciaExacta(filas);
+    const recurrentes = recurrencia?.recurrentes ?? numero(exactos?.recurrentes);
+    // Analytics cuenta en ambos al usuario que llegó nuevo en el periodo y regresó,
+    // así que nuevos + recurrentes puede ser mayor que el total; no se deduce uno del otro.
+    const nuevos = recurrencia?.nuevos ?? numero(exactos?.nuevos);
 
     return {
-        exacto: Boolean(resumen),
+        exacto: usuarios !== null && sesiones !== null,
         dashboards: filas.length,
         dashboardsUsados: filas.filter(fila => fila._sesiones > 0).length,
         empresas: valoresUnicos(filas, "_empresa").length,
@@ -308,16 +361,37 @@ function calcularMetricas(filas, usarResumen) {
         sesiones,
         vistas,
         eventos,
-        recurrentes: recurrentesAjustados,
-        nuevos: Math.max(totalUsuarios - recurrentesAjustados, 0),
-        sesionesInteraccion: sesionesInteraccionEstimadas,
-        vistasPorSesion: sesiones ? vistas / sesiones : 0,
-        eventosPorSesion: sesiones ? eventos / sesiones : 0,
-        tasaInteraccion,
-        tiempoPorSesion: sesiones ? segundosTotales / sesiones : 0,
-        tiempoPorUsuario: usuarios ? segundosTotales / usuarios : 0,
-        sesionesInteraccionPorUsuario: usuarios ? sesionesInteraccionEstimadas / usuarios : 0
+        recurrentes,
+        nuevos,
+        sesionesInteraccion,
+        vistasPorSesion: dividir(vistas, sesiones),
+        eventosPorSesion: dividir(eventos, sesiones),
+        tasaInteraccion: dividir(sesionesInteraccion, sesiones),
+        tiempoPorSesion: dividir(segundos, sesiones),
+        tiempoPorUsuario: dividir(segundos, usuarios),
+        sesionesInteraccionPorUsuario: dividir(sesionesInteraccion, usuarios)
     };
+}
+
+// Sesiones (o usuarios) de cada empresa / área. Solo es exacto cuando el grupo
+// queda completo o es un solo dashboard; si no, el valor es null ("—").
+function totalesPorGrupo(filas, campo, metrica) {
+    let exacto = true;
+
+    const items = valoresUnicos(filas, campo)
+        .map(nombre => {
+            const totales = totalesExactos(filas.filter(fila => fila[campo] === nombre));
+            const valor = Number.isFinite(totales?.[metrica]) ? totales[metrica] : null;
+
+            if (valor === null) {
+                exacto = false;
+            }
+
+            return { nombre, valor };
+        })
+        .sort((a, b) => (b.valor ?? -1) - (a.valor ?? -1));
+
+    return { items, exacto };
 }
 
 // Suma los conteos de un campo tipo "Chrome (3), Firefox (1)"
@@ -347,54 +421,81 @@ function agruparPor(filas, campo, campoValor) {
         .sort((a, b) => b.valor - a.valor);
 }
 
-function claveDia(fecha) {
-    return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}-${String(fecha.getDate()).padStart(2, "0")}`;
-}
+// Desglose exacto que envía el Apps Script en respuesta.desgloses (país, ciudad,
+// sistema…). Viene calculado por Analytics sin usuarios repetidos, así que solo
+// aplica sin filtros; con filtro o si no existe se devuelve null.
+function desgloseExacto(clave, filtrado) {
+    const lista = filtrado ? null : Analytics.desgloses?.[clave];
 
-// Serie día por día (con ceros en los días sin actividad) hasta hoy.
-// metricas: { sesiones: fila => fila._sesiones, ... }
-function serieDiaria(filas, campoFecha, metricas) {
-    const mapa = new Map();
-
-    filas.forEach(fila => {
-        const fecha = fila[campoFecha];
-
-        if (!fecha) {
-            return;
-        }
-
-        const clave = claveDia(fecha);
-        const acumulado = mapa.get(clave) || {};
-
-        Object.entries(metricas).forEach(([nombre, obtener]) => {
-            acumulado[nombre] = (acumulado[nombre] || 0) + obtener(fila);
-        });
-
-        mapa.set(clave, acumulado);
-    });
-
-    if (!mapa.size) {
-        return [];
+    if (!Array.isArray(lista) || !lista.length) {
+        return null;
     }
 
+    // "Sin identificar" (lo que Analytics registra como "(not set)") va al final
+    const alFinal = item => (item.nombre === "Sin identificar" ? 1 : 0);
+
+    return lista
+        .map(item => ({ nombre: String(item.nombre ?? "(sin dato)"), valor: numeroSeguro(item.valor) }))
+        .filter(item => item.valor > 0)
+        .sort((a, b) => alFinal(a) - alFinal(b) || b.valor - a.valor);
+}
+
+// Desglose exacto: el de Analytics sin filtro, o el de la fila si queda un solo
+// dashboard. Para varios dashboards no se puede saber sin repetir usuarios: null.
+function desglose(clave, filas, campo, filtrado) {
+    return desgloseExacto(clave, filtrado)
+        || (filas.length === 1 ? agregarLista(filas, campo) : null);
+}
+
+// Serie diaria exacta (respuesta.desgloses.diario) con ceros en los días sin datos.
+function serieDiariaExacta(filtrado) {
+    const diario = filtrado ? null : Analytics.desgloses?.diario;
+
+    if (!Array.isArray(diario) || !diario.length) {
+        return null;
+    }
+
+    const mapa = new Map(diario.map(dia => [String(dia.fecha).slice(0, 10), dia]));
     const claves = [...mapa.keys()].sort();
     const [anio, mes, dia] = claves[0].split("-").map(Number);
-    const fin = new Date();
-    fin.setHours(0, 0, 0, 0);
+    const [anioFin, mesFin, diaFin] = claves.at(-1).split("-").map(Number);
+    const fin = new Date(anioFin, mesFin - 1, diaFin);
     const dias = [];
 
     for (const fecha = new Date(anio, mes - 1, dia); fecha <= fin; fecha.setDate(fecha.getDate() + 1)) {
         const valores = mapa.get(claveDia(fecha)) || {};
-        const punto = { fecha: new Date(fecha) };
-
-        Object.keys(metricas).forEach(nombre => {
-            punto[nombre] = valores[nombre] || 0;
+        dias.push({
+            fecha: new Date(fecha),
+            usuarios: numeroSeguro(valores.usuarios),
+            sesiones: numeroSeguro(valores.sesiones),
+            vistas: numeroSeguro(valores.vistas),
+            eventos: numeroSeguro(valores.eventos),
+            segundos: numeroSeguro(valores.segundos)
         });
-
-        dias.push(punto);
     }
 
     return dias;
+}
+
+function claveDia(fecha) {
+    return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}-${String(fecha.getDate()).padStart(2, "0")}`;
+}
+
+// Cuando un dato no se puede calcular exacto se muestra "—" en vez de un estimado.
+const NO_DISPONIBLE = "—";
+const MENSAJE_NO_EXACTO = "Con este filtro Analytics no permite calcular este dato sin repetir usuarios entre dashboards. Quita el filtro o elige una sola empresa, un área o un dashboard.";
+const MENSAJE_SOLO_SIN_FILTRO = "La actividad por día solo está disponible sin filtros.";
+
+function dato(valor, formato = numero => fmt(numero)) {
+    return valor === null || valor === undefined || Number.isNaN(valor) ? NO_DISPONIBLE : formato(valor);
+}
+
+function noDisponible(id, mensaje = MENSAJE_NO_EXACTO) {
+    const contenedor = document.getElementById(id);
+
+    if (contenedor) {
+        contenedor.innerHTML = vacio(mensaje);
+    }
 }
 
 
@@ -677,24 +778,6 @@ document.addEventListener("click", evento => {
 // Solo existen en las páginas que tienen #filtrosAnalytics.
 // =====================================================
 
-function leerFiltrosGuardados() {
-    try {
-        const guardados = JSON.parse(sessionStorage.getItem(CLAVE_FILTROS) || "{}");
-        Analytics.filtros.area = String(guardados.area || "");
-        Analytics.filtros.empresa = String(guardados.empresa || "");
-    } catch (error) {
-        Analytics.filtros = { area: "", empresa: "" };
-    }
-}
-
-function guardarFiltros() {
-    try {
-        sessionStorage.setItem(CLAVE_FILTROS, JSON.stringify(Analytics.filtros));
-    } catch (error) {
-        // Sin almacenamiento disponible: los filtros solo duran en esta página.
-    }
-}
-
 function hayFiltrosCompartidos() {
     return Boolean(document.getElementById("filtrosAnalytics"));
 }
@@ -762,8 +845,6 @@ function inicializarFiltrosCompartidos() {
         return;
     }
 
-    leerFiltrosGuardados();
-
     const trigger = document.getElementById("empresaTrigger");
     const panel = document.getElementById("empresaPanel");
     const buscador = document.getElementById("empresaBuscar");
@@ -793,11 +874,21 @@ function inicializarFiltrosCompartidos() {
         }
 
         if (evento.target.closest("#btnLimpiarFiltros")) {
-            Analytics.filtros = { area: "", empresa: "" };
-            if (buscador) buscador.value = "";
-            aplicarFiltros();
+            limpiarFiltros();
         }
     });
+
+    document.getElementById("avisoFiltro")?.addEventListener("click", evento => {
+        if (evento.target.closest("[data-ver-todo]")) {
+            limpiarFiltros();
+        }
+    });
+
+    function limpiarFiltros() {
+        Analytics.filtros = { area: "", empresa: "" };
+        if (buscador) buscador.value = "";
+        aplicarFiltros();
+    }
 
     trigger?.addEventListener("click", () => {
         alternarPanel(trigger, panel);
@@ -807,16 +898,44 @@ function inicializarFiltrosCompartidos() {
     buscador?.addEventListener("input", dibujarOpcionesEmpresa);
 }
 
+// Aviso visible de que los números corresponden solo a una parte de los dashboards
+function pintarAvisoFiltro() {
+    const aviso = document.getElementById("avisoFiltro");
+
+    if (!aviso) {
+        return;
+    }
+
+    const { area, empresa } = Analytics.filtros;
+
+    if (!area && !empresa) {
+        aviso.hidden = true;
+        aviso.innerHTML = "";
+        return;
+    }
+
+    const partes = [
+        area ? `área <b>${escaparHTML(area)}</b>` : "",
+        empresa ? `empresa <b>${escaparHTML(empresa)}</b>` : ""
+    ].filter(Boolean).join(" y ");
+
+    aviso.innerHTML = `
+        <span>Mostrando solo ${partes}: <b>${fmt(Analytics.filas.length)} de ${fmt(Analytics.todas.length)}</b> dashboards.
+        Los usuarios con filtro son aproximados.</span>
+        <button type="button" class="filter-chip" data-ver-todo>Ver todo</button>`;
+    aviso.hidden = false;
+}
+
 function aplicarFiltros() {
     const compartidos = hayFiltrosCompartidos();
     Analytics.filas = compartidos ? filasFiltradas() : Analytics.todas;
 
     const sinFiltro = !Analytics.filtros.area && !Analytics.filtros.empresa;
-    const metricas = calcularMetricas(Analytics.filas, !compartidos || sinFiltro);
+    const metricas = calcularMetricas(Analytics.filas);
 
     if (compartidos) {
-        guardarFiltros();
         dibujarFiltros();
+        pintarAvisoFiltro();
     }
 
     document.dispatchEvent(new CustomEvent("analytics:actualizado", {
@@ -883,6 +1002,8 @@ function procesarAnalytics(respuesta) {
 
     Analytics.todas = datos.map(normalizarRegistro);
     Analytics.resumen = respuesta.resumen || null;
+    Analytics.desgloses = respuesta.desgloses || null;
+    Analytics.grupos = respuesta.grupos || null;
     Analytics.actualizado = respuesta.actualizado ? new Date(respuesta.actualizado) : new Date();
 
     actualizarEncabezado();

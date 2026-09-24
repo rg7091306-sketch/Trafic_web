@@ -16,9 +16,6 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
             <div class="topbar-title">Tráfico web <small>Control general</small></div>
-            <div class="topbar-right">
-                <div class="date-pill"><span class="dot-live pulse"></span><span>Actualizado: <span id="currentDate">--</span></span></div>
-            </div>
         </header>
 
         <main class="content">
@@ -28,7 +25,7 @@
                 <div>
                     <div class="page-eyebrow">Tráfico web · Google Analytics</div>
                     <h1 class="page-title">Control general de tráfico</h1>
-                    <p class="page-sub" id="pageSync">Cargando datos…</p>
+                    <p class="page-sub">Monitoreo de actividad de dashboards y usuarios</p>
                 </div>
                 <div class="header-actions">
                     <div class="hero-pills">
@@ -36,7 +33,7 @@
                         <span><b id="heroEmpresas">—</b> empresas</span>
                         <span><b id="heroAreas">—</b> áreas</span>
                     </div>
-                    <button class="filter-chip" id="btnRefresh" type="button">↻ Actualizar datos</button>
+                    <button class="filter-chip" id="btnRefresh" type="button" title="Actualizar datos" aria-label="Actualizar datos"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
                 </div>
             </div>
 
@@ -66,9 +63,11 @@
                         </div>
                     </div>
                     <div class="filter-group">
-                        <button class="filter-chip ghost" id="btnLimpiarFiltros" type="button">✕ Limpiar filtros</button>
+                        <button class="filter-chip btn-limpiar" id="btnLimpiarFiltros" type="button" title="Limpiar filtros" aria-label="Limpiar filtros"><span class="icono-limpiar" aria-hidden="true"><img class="icono-normal" src="../img/quitar.png" alt=""><img class="icono-hover" src="../img/quitar2.png" alt=""></span></button>
                     </div>
                 </div>
+
+                <div class="filter-notice" id="avisoFiltro" role="status" hidden></div>
 
                 <!-- KPIs ─────────────────────────────────────────────── -->
                 <div class="kpi-grid">
@@ -127,7 +126,7 @@
                     <div class="content-panel">
                         <h2>Usuarios activos por país</h2>
                         <p class="caption">Proporción de usuarios según la ubicación de su visita</p>
-                        <div id="donaPaises"></div>
+                        <div id="donaPaises" class="chart-body"></div>
                     </div>
                 </div>
 
@@ -136,7 +135,7 @@
                     <div class="panel-head">
                         <div>
                             <h2>Actividad de los usuarios a lo largo del tiempo</h2>
-                            <p class="caption">Sesiones y usuarios activos por día, según la fecha de última actividad de cada dashboard</p>
+                            <p class="caption">Sesiones y usuarios activos por día</p>
                         </div>
                         <div class="summary" id="resumenActividad"></div>
                     </div>
@@ -147,8 +146,8 @@
                 <div class="two-col even">
                     <div class="content-panel">
                         <h2>Sesiones por área</h2>
-                        <p class="caption">Participación de cada tipo de dashboard en las sesiones</p>
-                        <div id="donaAreas"></div>
+                        <p class="caption">Sesiones que pasaron por cada tipo de dashboard · una sesión puede pasar por varios, por eso el porcentaje es sobre el total de sesiones</p>
+                        <div id="donaAreas" class="chart-body"></div>
                     </div>
                     <div class="content-panel">
                         <h2>Empresas con más sesiones</h2>
@@ -169,10 +168,6 @@
                     </div>
                 </div>
 
-            </div>
-
-            <div class="footnote">
-                Tráfico web · Google Analytics vía Apps Script &nbsp;·&nbsp; Última sincronización: <code id="footerTime">—</code>
             </div>
         </main>
     </div>

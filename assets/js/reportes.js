@@ -272,28 +272,36 @@ function inicializarCalendario(tipo) {
 // =====================================================
 
 function renderizarResumenReporte(filas) {
-    // Sin filtros se usan los totales exactos de la API (sin usuarios ni sesiones repetidos)
-    const sinFiltros = !Reportes.empresas.size && !Reportes.area && !Reportes.desde && !Reportes.hasta;
-    const metricas = calcularMetricas(filas, sinFiltros);
+    const metricas = calcularMetricas(filas);
 
     colocarTexto("repKpiDashboards", fmt(metricas.dashboards));
     colocarTexto("repKpiDashboardsSub", `${fmt(metricas.dashboardsUsados)} con sesiones`);
     colocarTexto("repKpiEmpresas", fmt(metricas.empresas));
-    colocarTexto("repKpiSesiones", fmt(metricas.sesiones));
-    colocarTexto("repKpiSesionesSub", `${fmtPct(metricas.tasaInteraccion, 0)} con interacción`);
+    colocarTexto("repKpiSesiones", dato(metricas.sesiones));
+    colocarTexto("repKpiSesionesSub", metricas.tasaInteraccion !== null
+        ? `${fmtPct(metricas.tasaInteraccion, 0)} con interacción`
+        : "No disponible con esta selección");
     colocarTexto("repKpiVistas", fmt(metricas.vistas));
-    colocarTexto("repKpiVistasSub", `${fmt(metricas.vistasPorSesion, 1)} por sesión`);
+    colocarTexto("repKpiVistasSub", metricas.vistasPorSesion !== null
+        ? `${fmt(metricas.vistasPorSesion, 1)} por sesión`
+        : "Páginas vistas");
     colocarTexto("repKpiEventos", fmt(metricas.eventos));
 
     colocarTexto("repDonaCaption", Reportes.empresas.size
-        ? `Sesiones sumadas de los dashboards de ${Reportes.empresas.size === 1 ? "la empresa seleccionada" : `${fmt(Reportes.empresas.size)} empresas seleccionadas`}`
-        : "Sesiones sumadas de los dashboards de cada empresa");
+        ? "Sesiones que incluyeron dashboards de cada empresa seleccionada"
+        : "Sesiones que incluyeron dashboards de cada empresa · una sesión puede incluir varias empresas");
 
-    renderDona("repDona", agruparPor(filas, "_empresa", "_sesiones"), {
-        etiqueta: "Empresas",
-        centro: fmt(metricas.empresas),
-        limite: 8
-    });
+    const porEmpresa = totalesPorGrupo(filas, "_empresa", "sesiones");
+
+    if (porEmpresa.exacto) {
+        renderRanking("repDona", porEmpresa.items, {
+            columnas: ["Empresa", "Sesiones"],
+            total: metricas.sesiones,
+            limite: 16
+        });
+    } else {
+        noDisponible("repDona");
+    }
 }
 
 function renderizarTablaReporte(base) {

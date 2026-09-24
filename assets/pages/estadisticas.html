@@ -16,9 +16,6 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
             <div class="topbar-title">Tráfico web <small>Estadísticas</small></div>
-            <div class="topbar-right">
-                <div class="date-pill"><span class="dot-live pulse"></span><span>Actualizado: <span id="currentDate">--</span></span></div>
-            </div>
         </header>
 
         <main class="content">
@@ -28,7 +25,7 @@
                 <div>
                     <div class="page-eyebrow">Tráfico web · Audiencia y comportamiento</div>
                     <h1 class="page-title">Estadísticas</h1>
-                    <p class="page-sub" id="pageSync">Cargando datos…</p>
+                    <p class="page-sub">Resumen visual de sesiones y actividad</p>
                 </div>
                 <div class="header-actions">
                     <div class="hero-pills">
@@ -36,7 +33,7 @@
                         <span><b id="heroEmpresas">—</b> empresas</span>
                         <span><b id="heroAreas">—</b> áreas</span>
                     </div>
-                    <button class="filter-chip" id="btnRefresh" type="button">↻ Actualizar datos</button>
+                    <button class="filter-chip" id="btnRefresh" type="button" title="Actualizar datos" aria-label="Actualizar datos"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
                 </div>
             </div>
 
@@ -66,9 +63,11 @@
                         </div>
                     </div>
                     <div class="filter-group">
-                        <button class="filter-chip ghost" id="btnLimpiarFiltros" type="button">✕ Limpiar filtros</button>
+                        <button class="filter-chip btn-limpiar" id="btnLimpiarFiltros" type="button" title="Limpiar filtros" aria-label="Limpiar filtros"><span class="icono-limpiar" aria-hidden="true"><img class="icono-normal" src="../img/quitar.png" alt=""><img class="icono-hover" src="../img/quitar2.png" alt=""></span></button>
                     </div>
                 </div>
+
+                <div class="filter-notice" id="avisoFiltro" role="status" hidden></div>
 
                 <!-- TABS ─────────────────────────────────────────────── -->
                 <div class="tabs" id="tabsEstadisticas">
@@ -81,7 +80,7 @@
                 <div id="tab-audiencia">
                     <div class="kpi-grid">
                         <div class="kpi"><div class="kpi-label">Total de usuarios</div><div class="kpi-value" id="audUsuarios">—</div><div class="kpi-sub" id="audUsuariosSub">Usuarios únicos</div></div>
-                        <div class="kpi"><div class="kpi-label">Usuarios nuevos</div><div class="kpi-value txt-cyan" id="audNuevos">—</div><div class="kpi-sub">Primera visita</div></div>
+                        <div class="kpi"><div class="kpi-label">Usuarios nuevos</div><div class="kpi-value txt-cyan" id="audNuevos">—</div><div class="kpi-sub">Primera visita en el periodo</div></div>
                         <div class="kpi"><div class="kpi-label">Usuarios recurrentes</div><div class="kpi-value txt-green" id="audRecurrentes">—</div><div class="kpi-sub" id="audRecurrentesSub">Regresaron</div></div>
                         <div class="kpi"><div class="kpi-label">Países</div><div class="kpi-value" id="audPaises">—</div><div class="kpi-sub" id="audPaisesSub">—</div></div>
                         <div class="kpi"><div class="kpi-label">Ciudades</div><div class="kpi-value" id="audCiudades">—</div><div class="kpi-sub" id="audCiudadesSub">—</div></div>
@@ -90,13 +89,13 @@
                     <div class="two-col">
                         <div class="content-panel">
                             <h2>Usuarios activos por país</h2>
-                            <p class="caption">Un usuario que abre varios dashboards se cuenta en cada uno</p>
-                            <div id="rankPaises"></div>
+                            <p class="caption">Usuarios activos según la ubicación de su visita</p>
+                            <div id="donaPaisesAudiencia" class="chart-body"></div>
                         </div>
                         <div class="content-panel">
                             <h2>Usuarios nuevos y recurrentes</h2>
-                            <p class="caption">Usuarios que regresaron frente a los de primera visita</p>
-                            <div id="donaRecurrencia"></div>
+                            <p class="caption">Un usuario que llegó nuevo en el periodo y regresó cuenta en las dos filas, igual que en Analytics</p>
+                            <div id="donaRecurrencia" class="chart-body"></div>
                         </div>
                     </div>
 
@@ -126,12 +125,12 @@
                         <div class="content-panel">
                             <h2>Sistemas operativos</h2>
                             <p class="caption">Usuarios activos por sistema operativo</p>
-                            <div id="rankSistemas"></div>
+                            <div id="donaSistemas" class="chart-body"></div>
                         </div>
                         <div class="content-panel">
                             <h2>Categoría de dispositivo</h2>
                             <p class="caption">Escritorio, móvil y tablet</p>
-                            <div id="donaDispositivos"></div>
+                            <div id="donaDispositivos" class="chart-body"></div>
                         </div>
                     </div>
 
@@ -160,7 +159,7 @@
 
                     <div class="content-panel">
                         <h2>Eventos y vistas a lo largo del tiempo</h2>
-                        <p class="caption">Por día, según la fecha de última actividad de cada dashboard</p>
+                        <p class="caption">Eventos y vistas registrados por día</p>
                         <div class="line-chart" id="chartEventos"></div>
                     </div>
 
@@ -168,7 +167,7 @@
                         <div class="content-panel">
                             <h2>Eventos por tipo</h2>
                             <p class="caption">page_view, scroll, session_start, user_engagement, first_visit…</p>
-                            <div id="columnasEventos"></div>
+                            <div id="columnasEventos" class="chart-body chart-fill"></div>
                         </div>
                         <div class="content-panel">
                             <h2>Tiempo medio de interacción por dashboard</h2>
@@ -202,10 +201,6 @@
                     </div>
                 </div>
 
-            </div>
-
-            <div class="footnote">
-                Tráfico web · Google Analytics vía Apps Script &nbsp;·&nbsp; Última sincronización: <code id="footerTime">—</code>
             </div>
         </main>
     </div>
