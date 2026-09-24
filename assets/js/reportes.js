@@ -105,7 +105,7 @@ function escaparTexto(texto) {
         .replaceAll('"', "&quot;");
 }
 
-function formatearFechaAnalytics(valor) {
+function formatearFechaReporte(valor) {
     const texto = String(valor);
     const numero = Number(texto.replace(/,/g, ""));
     const fechaLocal = texto.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
@@ -285,7 +285,7 @@ function renderizarTablaReportes(empresa, area, textoBusqueda = "", columna = ""
             : columnasNumericasReportes.has(clave)
                 ? numeroSesiones(item[clave]).toLocaleString("es-GT")
             : ["PRIMER_ACCESO", "ULTIMO_ACCESO", "ULTIMA_ACTIVIDAD"].includes(clave)
-                ? formatearFechaAnalytics(item[clave])
+                ? formatearFechaReporte(item[clave])
                 : String(item[clave]);
         return `<td class="${claseEmpresa.trim()}">${escaparTexto(valor)}</td>`;
     }).join("")}</tr>`);
