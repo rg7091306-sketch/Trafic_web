@@ -989,6 +989,34 @@ body.sidebar-collapsed .sidebar {
     box-shadow: var(--sombra-hover);
 }
 
+/* Tarjeta destacada: la tabla de empresas es lo más importante del dashboard */
+.panel-destacado {
+    border-color: rgba(14, 118, 192, 0.35);
+    box-shadow: 0 12px 30px rgba(8, 38, 66, 0.12);
+}
+
+.panel-destacado::before {
+    height: 5px;
+    background: linear-gradient(90deg, var(--rojo), var(--grafica-acento) 45%, var(--grafica-luminoso));
+}
+
+.content-panel.panel-destacado h2 {
+    font-size: 18px;
+}
+
+.panel-destacado .caption {
+    font-size: 13px;
+}
+
+.panel-destacado tbody td {
+    padding: 13px 14px;
+    font-size: 13.5px;
+}
+
+.panel-destacado .cell-main {
+    font-size: 14px;
+}
+
 /* Tarjetas con gráfica: la gráfica ocupa y se centra en todo el alto disponible,
    así la tarjeta no queda con un hueco cuando su vecina es más alta. */
 .content-panel:has(> .chart-body) {

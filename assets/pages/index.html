@@ -103,6 +103,25 @@
                     </div>
                 </div>
 
+                <!-- EMPRESAS (lo más importante para el cliente) ─────── -->
+                <div class="content-panel panel-destacado">
+                    <h2>Empresas con más sesiones</h2>
+                    <p class="caption">Actividad acumulada de todos los dashboards de cada empresa</p>
+                    <div class="table-wrap tall">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Empresa</th>
+                                    <th class="num">Dashboards</th>
+                                    <th class="num">Sesiones</th>
+                                    <th class="num">Vistas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaEmpresas"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- INTERACCIÓN ──────────────────────────────────────── -->
                 <div class="content-panel">
                     <h2>Interacción de los usuarios</h2>
@@ -142,30 +161,11 @@
                     <div class="line-chart" id="chartActividad"></div>
                 </div>
 
-                <!-- USO + EMPRESAS ───────────────────────────────────── -->
-                <div class="two-col even">
-                    <div class="content-panel">
-                        <h2>Sesiones por área</h2>
-                        <p class="caption">Sesiones que pasaron por cada tipo de dashboard · una sesión puede pasar por varios, por eso el porcentaje es sobre el total de sesiones</p>
-                        <div id="donaAreas" class="chart-body"></div>
-                    </div>
-                    <div class="content-panel">
-                        <h2>Empresas con más sesiones</h2>
-                        <p class="caption">Actividad acumulada de todos los dashboards de cada empresa</p>
-                        <div class="table-wrap">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Empresa</th>
-                                        <th class="num">Dashboards</th>
-                                        <th class="num">Sesiones</th>
-                                        <th class="num">Vistas</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tablaEmpresas"></tbody>
-                            </table>
-                        </div>
-                    </div>
+                <!-- SESIONES POR ÁREA ───────────────────────────────── -->
+                <div class="content-panel">
+                    <h2>Sesiones por área</h2>
+                    <p class="caption">Sesiones que pasaron por cada tipo de dashboard · una sesión puede pasar por varios, por eso el porcentaje es sobre el total de sesiones</p>
+                    <div id="donaAreas" class="chart-body"></div>
                 </div>
 
             </div>
